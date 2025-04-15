@@ -1,0 +1,39 @@
+{
+  "name": "kita-jobs-hub-server",
+  "version": "1.0.0",
+  "description": "Backend server for Kita Jobs Hub Import Feature",
+  "main": "dist/server.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/server.js",
+    "watch": "tsc --project tsconfig.json --watch",
+    "dev": "concurrently -k -n TSC,NODE -c yellow,cyan \"npm run watch\" \"nodemon dist/server.js\""
+  },
+  "author": "",
+  "license": "ISC",
+  "_moduleAliases": {
+    "@services": "dist/services",
+    "@scrapers": "dist/scrapers",
+    "@utils": "dist/scrapers/utils",
+    "@extractors": "dist/scrapers/extractors"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "axios": "^1.8.4",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "module-alias": "^2.2.3",
+    "node-fetch": "^3.3.2",
+    "vite_react_shadcn_ts": "file:.."
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.14.0",
+    "concurrently": "^9.1.2",
+    "nodemon": "^3.1.9",
+    "typescript": "^5.8.2"
+  }
+}

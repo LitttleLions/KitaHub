@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true, // Add this flag
+    "strict": true,
+    "noEmit": true // Ensure no JavaScript files are emitted from this config
+  },
+  "include": ["vite.config.ts"] // Include the Vite config file
+}

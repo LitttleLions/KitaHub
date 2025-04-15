@@ -1,0 +1,44 @@
+version: '3.8'
+
+networks:
+  kita-net:
+    driver: bridge
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+    environment:
+      - NODE_ENV=development
+    restart: unless-stopped
+    init: true
+    networks:
+      - kita-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  import-service:
+    build:
+      context: ./server
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./server:/app
+    environment:
+      - NODE_ENV=development
+    restart: unless-stopped
+    networks:
+      - kita-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
