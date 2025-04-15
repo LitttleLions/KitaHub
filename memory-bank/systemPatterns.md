@@ -27,6 +27,9 @@
   - Modular (Scraper, Parser, Mapper, Services)
   - API-Endpunkte für Import-Status, Start, Ergebnisse
   - Statusverwaltung im Speicher
+  - **Robuste Extraktion:** Einsatz dedizierter, robuster Extraktor-Funktionen (z.B. `extractAddress`) anstelle von komplexen Fallbacks oder Regex, um die Zuverlässigkeit der Datenextraktion zu erhöhen.
+  - **Konsistentes Logging:** Gezieltes und klares Logging von Erfolgen, Fehlern (z.B. übersprungene Datensätze) und extrahierten Daten zur Verbesserung der Nachvollziehbarkeit und Fehlersuche.
+  - **HTML-Formatierung erhalten:** Übernahme von HTML-Inhalten für bestimmte Felder (z.B. Beschreibungen) zur Beibehaltung der Formatierung für das Frontend.
 - **Containerisierung:**
   - Frontend & Backend als separate Docker-Container
   - Gemeinsames Netzwerk, Hot Reload, Healthchecks
@@ -36,6 +39,11 @@
   - Formulare mit react-hook-form + zod
   - Upload-Komponenten für Bilder
   - Wiederverwendbare Komponenten für Listen, Tags, Dialoge
+- **Vollständige Datenkette (Frontend):** Um Daten aus der Datenbank im Frontend anzuzeigen, muss sichergestellt sein, dass:
+  1. Die Daten in der Datenbank vorhanden sind.
+  2. Die API-Abfrage (z.B. `fetchCompanyById`) die Felder explizit abfragt (`select`).
+  3. Der Frontend-Mapper (z.B. `mapToCompany`) die abgefragten Daten korrekt in das Frontend-Objekt überträgt.
+  4. Die Frontend-Komponente die Daten aus dem Objekt tatsächlich anzeigt. Ein Bruch an einer Stelle dieser Kette führt dazu, dass Daten nicht sichtbar sind.
 
 ---
 

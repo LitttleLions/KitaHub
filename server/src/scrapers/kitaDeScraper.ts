@@ -1,14 +1,15 @@
-import axios from 'axios'; // Use import
-import * as cheerio from 'cheerio'; // Correct import for ES Modules
-import { Element } from 'domhandler'; // Import Element type from domhandler
-import type { RawKitaDetails } from '../types/company.d.ts'; // Import type
-import { addLog, updateJobStatus, LogLevel } from '../services/importStatusService.js'; // Fix: .js extension for ESM compatibility
-import { importConfig } from '../config/importConfig.js'; // Add .js extension
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+import { Element } from 'domhandler';
+import type { RawKitaDetails } from '../types/company.d.ts';
+import { addLog, updateJobStatus, LogLevel } from '../services/importStatusService.js';
+import { importConfig } from '../config/importConfig.js';
 import { extractContact } from './extractors/contactExtractor.js';
 import { extractDescriptionAndHours } from './extractors/descriptionExtractor.js';
 import { extractGallery } from './extractors/galleryExtractor.js';
 import { extractFeatures } from './extractors/featuresExtractor.js';
 import { extractTableData } from './extractors/tableExtractor.js';
+import { extractAddress } from './extractors/addressExtractor.js';
 
 // --- Interfaces (Moved to company.d.ts) ---
 
@@ -397,12 +398,29 @@ function extractDetailsFromHtml($: cheerio.CheerioAPI, sourceUrl: string, jobId:
             addLog(jobId, `Could not extract logo_url from ${sourceUrl}`, 'info');
         }
 
+        // --- Cover-Image: Versuche alle Varianten, logge nur wenn wirklich kein Bild gefunden wurde ---
+        let coverImageUrl: string | undefined = undefined;
+        // 1. cover-image/hero-image
         const coverElement = $('.cover-image img, #cover-image img, .hero-image img, header > img').first();
         if (coverElement.length > 0) {
             const coverSrc = coverElement.attr('src');
             if (coverSrc && coverSrc !== kitaInfo.logo_url) {
-                kitaInfo.cover_image_url = new URL(coverSrc, importConfig.baseUrl).toString();
+                coverImageUrl = new URL(coverSrc, importConfig.baseUrl).toString();
             }
+        }
+        // 2. img.gfx_profile
+        if (!coverImageUrl) {
+            const profileImg = $('img.gfx_profile').first();
+            if (profileImg.length > 0) {
+                const src = profileImg.attr('src');
+                if (src) {
+                    coverImageUrl = new URL(src, importConfig.baseUrl).toString();
+                    addLog(jobId, `Extracted cover_image_url from img.gfx_profile: ${coverImageUrl}`, 'info');
+                }
+            }
+        }
+        if (coverImageUrl) {
+            kitaInfo.cover_image_url = coverImageUrl;
         } else {
             addLog(jobId, `Could not extract cover_image_url from ${sourceUrl}`, 'info');
         }
@@ -422,19 +440,17 @@ function extractDetailsFromHtml($: cheerio.CheerioAPI, sourceUrl: string, jobId:
         addLog(jobId, `Error extracting name: ${message}`, 'warn');
     }
 
-    // --- Address Extraction (Robust Extraction) ---
+    // --- Address: Nur noch robusten Extraktor verwenden ---
     try {
-        // Find potential contact containers more broadly
         const potentialContainers = $('div.details, .kontakt, .contact, #kontakt, #contact, address, .adresse, #adresse, .sidebar, aside, .footer, footer');
-        let contactContainer = potentialContainers.first() as cheerio.Cheerio<Element>; // Added Type Cast
+        let contactContainer = potentialContainers.first() as cheerio.Cheerio<Element>;
         if (contactContainer.length === 0) {
-            // Fallback: Look near H1 or in common sections if specific containers fail
-            contactContainer = $('h1').first().closest('div, section, article') as cheerio.Cheerio<Element>; // Added Type Cast
+            contactContainer = $('h1').first().closest('div, section, article') as cheerio.Cheerio<Element>;
             if (contactContainer.length === 0 || contactContainer.prop('tagName')?.toLowerCase() === 'body') {
-                contactContainer = $('main, #main, .main-content, article').first() as cheerio.Cheerio<Element>; // Added Type Cast
+                contactContainer = $('main, #main, .main-content, article').first() as cheerio.Cheerio<Element>;
             }
             if (contactContainer.length === 0) {
-                contactContainer = $('body') as cheerio.Cheerio<Element>; // Added Type Cast
+                contactContainer = $('body') as cheerio.Cheerio<Element>;
                 addLog(jobId, `No specific contact container found, using body as fallback.`, 'warn');
             } else {
                 addLog(jobId, `Using fallback container: ${contactContainer.prop('tagName')}.${contactContainer.attr('class') || ''}${contactContainer.attr('id') ? '#' + contactContainer.attr('id') : ''}`, 'info');
@@ -442,139 +458,38 @@ function extractDetailsFromHtml($: cheerio.CheerioAPI, sourceUrl: string, jobId:
         } else {
             addLog(jobId, `Using primary container: ${contactContainer.prop('tagName')}.${contactContainer.attr('class') || ''}${contactContainer.attr('id') ? '#' + contactContainer.attr('id') : ''}`, 'info');
         }
-
-        // --- Address Parsing (More Robust) ---
-        let addressFound = false;
-        // Try specific selectors first within the container
-        let addressElement = contactContainer.find('.address, .adresse, p:contains("Straße"), p:contains("Adresse"), div:contains("Straße"), div:contains("Adresse")').first();
-        if (addressElement.length === 0) {
-            // Fallback 1: Look for paragraphs/divs containing a 5-digit number (PLZ) within the container
-            contactContainer.find('p, div').each((_, el) => {
-                const text = $(el).text();
-                // Basic check for street number and PLZ pattern, avoid long texts
-                if (/\d{1,4}[a-zA-Z]?\s*,\s*\d{5}|\d{5}\s+\w+/.test(text) && text.length < 150) {
-                    addressElement = $(el);
-                    addLog(jobId, `Address found using container PLZ fallback.`, 'info');
-                    return false; // Stop searching
-                }
-            });
+        // Nur noch den robusten Extraktor verwenden:
+        const addressResult = extractAddress($, contactContainer, jobId);
+        if (addressResult) {
+            kitaInfo.strasse = addressResult.strasse;
+            kitaInfo.house_number = addressResult.house_number;
+            kitaInfo.plz = addressResult.plz;
+            kitaInfo.ort = addressResult.ort;
+            kitaInfo.bezirk = addressResult.bezirk;
+            kitaInfo.address_full = addressResult.address_full;
         }
-
-        // Fallback 2: Search the whole body if still not found in the container
-        if (addressElement.length === 0) {
-            $('p, address, div.address, div.adresse').each((_, el) => {
-                const text = $(el).text();
-                if (/\d{1,4}[a-zA-Z]?\s*,\s*\d{5}|\d{5}\s+\w+/.test(text) && text.length < 150) {
-                    addressElement = $(el);
-                    addLog(jobId, `Address found using body fallback selector.`, 'info');
-                    return false;
-                }
-            });
-        }
-
-        if (addressElement.length > 0) {
-            // Extract text, clean up whitespace, remove labels like "Adresse:"
-            const addressText = addressElement.text()
-                                      .replace(/Adresse:|Straße:/gi, '')
-                                      .replace(/\s+/g, ' ')
-                                      .trim();
-
-            // Regex patterns (more flexible) - Prioritize patterns with comma before PLZ
-            const patterns = [
-                /(.+?\s+[\d]+(?:[\s-]?[\d\w]+)?)\s*,\s*(\d{5})\s*(.+)/, // Street 123, 12345 City (Optional Bezirk)
-                /(.+?\s+[\d]+(?:[\s-]?[\d\w]+)?)\s+(\d{5})\s*(.+)/,    // Street 123 12345 City
-                /(\d{5})\s*(.+?),\s*(.+?\s+[\d]+(?:[\s-]?[\d\w]+)?)/     // 12345 City, Street 123
-            ];
-
-            for (const pattern of patterns) {
-                const match = addressText.match(pattern);
-                if (match) {
-                    let streetAndHouse, plz, city;
-                    // Determine which pattern matched based on capture groups
-                    if (pattern.source.includes(',')) { // PLZ City, Street 123 pattern OR Street 123, PLZ City
-                         if (/^\d{5}/.test(match[1])) { // Starts with PLZ: 12345 City, Street 123
-                             plz = match[1].trim();
-                             city = match[2].trim();
-                             streetAndHouse = match[3].trim();
-                         } else { // Standard: Street 123, PLZ City
-                             streetAndHouse = match[1].trim();
-                             plz = match[2].trim();
-                             city = match[3].trim();
-                         }
-                    } else { // Street 123 PLZ City
-                        streetAndHouse = match[1].trim();
-                        plz = match[2].trim();
-                        city = match[3].trim();
-                    }
-
-                    kitaInfo.plz = plz;
-                    kitaInfo.ort = city.replace(/,.*/, '').trim(); // Remove anything after a comma in city
-
-                    // Extract Street and House Number
-                    const houseNumberMatch = streetAndHouse.match(/^(.*?)\s+([\d]+(?:[\s-]?[\d\w\/]+)?)$/); // Allow / in house numbers
-                    if (houseNumberMatch) {
-                        kitaInfo.strasse = houseNumberMatch[1].trim().replace(/,$/, '');
-                        kitaInfo.house_number = houseNumberMatch[2].trim();
-                    } else {
-                        // Handle cases like "Am Park 5-7" or "Hauptstr. 12a"
-                        const complexHouseNrMatch = streetAndHouse.match(/^(.*?)\s+([\d]+[a-zA-Z]?\s*[-\/]?\s*[\d]*[a-zA-Z]?)$/);
-                         if (complexHouseNrMatch) {
-                             kitaInfo.strasse = complexHouseNrMatch[1].trim().replace(/,$/, '');
-                             kitaInfo.house_number = complexHouseNrMatch[2].trim();
-                         } else {
-                            kitaInfo.strasse = streetAndHouse.replace(/,$/, ''); // Store full string if no number found
-                            addLog(jobId, `Could not separate street and house number from: ${streetAndHouse} in ${addressText}`, 'warn');
-                         }
-                    }
-
-                    // Refined Bezirk extraction - Look for common patterns within the extracted city part
-                    const cityPartForBezirk = city; // Use original city string before trimming
-                    const bezirkMatch = cityPartForBezirk.match(/(?:\(| \/ | - |,\s*Bezirk\s+)(.*?)(?:\)|$)/i);
-                    if (bezirkMatch && bezirkMatch[1]) {
-                        kitaInfo.bezirk = bezirkMatch[1].trim();
-                        // Clean up ort if district was appended
-                        kitaInfo.ort = kitaInfo.ort.replace(bezirkMatch[0], '').trim();
-                    } else if (kitaInfo.ort && kitaInfo.ort.toLowerCase().includes('berlin') && kitaInfo.ort.length > 6) {
-                        const potentialBezirk = kitaInfo.ort.replace(/berlin/i, '').replace(/[-()]/g, '').trim();
-                         if (potentialBezirk && potentialBezirk.length > 2 && potentialBezirk.toLowerCase() !== 'berlin') {
-                            kitaInfo.bezirk = potentialBezirk;
-                            kitaInfo.ort = 'Berlin';
-                        }
-                    }
-                    addressFound = true;
-                    addLog(jobId, `Address parsed: ${kitaInfo.strasse} ${kitaInfo.house_number}, ${kitaInfo.plz} ${kitaInfo.ort}${kitaInfo.bezirk ? ' (' + kitaInfo.bezirk + ')' : ''}`, 'info');
-                    break; // Stop after first successful match
-                }
-            }
-            if (!addressFound) {
-                kitaInfo.address_full = addressText; // Store raw text if parsing fails
-                addLog(jobId, `Could not parse address structure: ${addressText}`, 'warn');
-            }
-        } else {
-            addLog(jobId, "Could not find address element", 'warn');
-        }
-
-        // --- Kontaktfelder extrahieren ---
-        const contact = extractContact($, sourceUrl, jobId);
-        if (contact.phone) kitaInfo.phone = contact.phone;
-        if (contact.email) kitaInfo.email = contact.email;
-        if (contact.website) kitaInfo.website = contact.website;
     } catch (e: unknown) {
         const message = e instanceof Error ? e.message : String(e);
-        addLog(jobId, `Error extracting address/contact details: ${message}`, 'warn');
+        addLog(jobId, `Error extracting address: ${message}`, 'warn');
     }
 
+    // --- Kontaktfelder extrahieren ---
+    const contact = extractContact($, sourceUrl, jobId);
+    if (contact.phone) kitaInfo.phone = contact.phone;
+    if (contact.email) kitaInfo.email = contact.email;
+    if (contact.website) kitaInfo.website = contact.website;
 
     // --- Table Data ---
     const tableData = extractTableData($, sourceUrl, jobId);
     if (tableData.traeger) kitaInfo.traeger = tableData.traeger;
     if (tableData.traegertyp) kitaInfo.traegertyp = tableData.traegertyp;
     if (tableData.dachverband) kitaInfo.dachverband = tableData.dachverband;
-    if (tableData.plaetze_gesamt) kitaInfo.plaetze_gesamt = tableData.plaetze_gesamt;
-    if (tableData.freie_plaetze) kitaInfo.freie_plaetze = tableData.freie_plaetze;
+    // Assign directly, as tableExtractor now returns numbers
+    if (tableData.plaetze_gesamt !== undefined) kitaInfo.plaetze_gesamt = String(tableData.plaetze_gesamt);
+    if (tableData.freie_plaetze !== undefined) kitaInfo.freie_plaetze = String(tableData.freie_plaetze);
     if (tableData.betreuungszeit) kitaInfo.betreuungszeit = tableData.betreuungszeit;
-    if (tableData.betreuungsalter_von) kitaInfo.betreuungsalter_von = tableData.betreuungsalter_von;
-    if (tableData.betreuungsalter_bis) kitaInfo.betreuungsalter_bis = tableData.betreuungsalter_bis;
+    if (tableData.betreuungsalter_von !== undefined) kitaInfo.betreuungsalter_von = String(tableData.betreuungsalter_von);
+    if (tableData.betreuungsalter_bis !== undefined) kitaInfo.betreuungsalter_bis = String(tableData.betreuungsalter_bis);
     if (tableData.paedagogisches_konzept) kitaInfo.paedagogisches_konzept = tableData.paedagogisches_konzept;
 
     // --- Description, Opening Hours, Concept ---
@@ -593,6 +508,19 @@ function extractDetailsFromHtml($: cheerio.CheerioAPI, sourceUrl: string, jobId:
     if (features.benefits) kitaInfo.benefits = features.benefits;
     if (features.certifications) kitaInfo.certifications = features.certifications;
     if (features.awards) kitaInfo.awards = features.awards;
+
+    // --- Kita-Typ (z.B. Krippe, Kindergarten, Hort) extrahieren ---
+    try {
+        const typeElement = $('h2.type').first();
+        if (typeElement.length > 0) {
+            const rawType = typeElement.text().trim();
+            // Replace " und " with ", " to create a comma-separated list
+            kitaInfo.kita_typ = rawType.replace(/\s+und\s+/gi, ', ');
+            addLog(jobId, `Kita-Typ extrahiert und formatiert: ${kitaInfo.kita_typ} (Original: ${rawType})`, 'info');
+        }
+    } catch (e) {
+        addLog(jobId, `Fehler beim Extrahieren des Kita-Typs: ${e instanceof Error ? e.message : String(e)}`, 'warn');
+    }
 
     // --- Video URL ---
     try {

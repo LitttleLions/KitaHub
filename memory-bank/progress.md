@@ -1,7 +1,7 @@
 # Progress – kita.de Plattform
 
-**Version:** 1.2
-**Stand:** 14. April 2025
+**Version:** 1.3
+**Stand:** 15. April 2025
 
 ---
 
@@ -40,21 +40,34 @@
         - `app` (Frontend, Port 8080)
         - `import-service` (Backend, Port 3002)
         - Gemeinsames Netzwerk `kita-net`, Healthchecks, Volumes für Live-Reload.
+- **Import/Scraper Best Practices dokumentiert:** Wichtige Erkenntnisse und Best Practices aus den jüngsten Verbesserungen (robuste Extraktion, Logging, Typisierung, HTML-Beibehaltung, Watch-Modus) wurden in `activeContext.md`, `systemPatterns.md` und `techContext.md` festgehalten, um zukünftige Entwicklungen zu leiten.
+- **Kita-Detailseite Datenanzeige korrigiert:** Die Anzeige von importierten Daten (Typ, Träger, Kapazität, Öffnungszeiten) auf der Detailseite funktioniert nun korrekt. Fehler in der Datenbankabfrage (`fetchCompanyById`) und im Frontend-Mapper (`mapToCompany`) wurden behoben. Die Erkenntnisse zur vollständigen Datenkette wurden dokumentiert (`activeContext.md`, `systemPatterns.md`).
+
+- **Wissen-Bereich erweitert:** Die Knowledge-Objekte werden jetzt sauber und ohne Typfehler aus der Datenbank geladen. Die Datenstruktur ist kompatibel mit der Anzeige im Frontend. Die Typisierung kann bei Bedarf weiter verfeinert werden.
+- **Build-Fehler behoben:** Durch Anpassungen in der Typisierung im Knowledge-Service und der Supabase-Konfiguration sind die Build-Fehler im Wissen-Bereich beseitigt worden.
+- **Admin Kita-Liste (`/admin/kitas`):**
+    - Tabelle um Spalten "Nr.", "ID", "Standort" erweitert (`src/pages/admin/AdminKitas.tsx`).
+    - Clientseitige Paginierung (10 Einträge/Seite) hinzugefügt.
+- **Admin Import (`/admin/import`):**
+    - Bundesland-Import-Fehler behoben (korrekte Zuordnung via `server/src/services/importService.ts` und `server/src/config/germanStates.ts`).
+    - Bundesländer-Auswahl nutzt nun `GERMAN_STATES`-Konstante (`src/lib/constants.ts`).
+    - Bezirks-Abruf funktioniert wieder (korrekte URL wird an Backend gesendet).
+    - State `bezirkFilter` und Reset-Logik in `src/pages/admin/AdminImport.tsx` hinzugefügt.
 
 ---
 
 ## Was fehlt noch? / Aktuelle Probleme
 
-- **Refaktorisierung & Stabilisierung Kita-Import (Priorität 1 - In Arbeit):**
-  - **Problem:** Der Scraper (`kitaDeScraper.ts`) war ursprünglich monolithisch und die Extraktion vieler Felder nicht robust genug.
-  - **Lösung:** Scraper wurde vollständig in logische Extraktor-Module aufgeteilt, alle relevanten Felder werden stabil extrahiert und in Supabase gespeichert.
-  - **Nächste Schritte (Neuer Task):**
-    1. Hilfsfunktionen auslagern (`utils/cheerioUtils.ts`).
-    2. Hauptfunktion `extractDetailsFromHtml` weiter vereinfachen.
-    3. Tests für Extraktoren implementieren.
-    4. Umfassenden Testlauf durchführen.
-    5. Optional: DB-Schema erweitern und Mapper anpassen.
-
+- **Bezirks-Filter implementieren (Priorität 1 - Neuer Task):**
+    - **Problem:** Bei Bundesländern mit vielen Bezirken ist die Checkbox-Liste in `src/pages/admin/AdminImport.tsx` unübersichtlich.
+    - **Kontext:** Der State `bezirkFilter` existiert, aber das UI-Element (Input-Feld) und die Filterlogik für die `.map()`-Funktion fehlen noch. Mehrere Versuche mit `replace_in_file` schlugen fehl.
+    - **Nächster Schritt:** Implementierung des Filterfelds und der Filterlogik in `src/pages/admin/AdminImport.tsx` (empfohlen: `write_to_file` verwenden).
+- **Refaktorisierung Kita-Import (Priorität 2):**
+    - Hilfsfunktionen auslagern (`utils/cheerioUtils.ts`).
+    - Hauptfunktion `extractDetailsFromHtml` weiter vereinfachen.
+    - Tests für Extraktoren implementieren.
+    - Umfassenden Testlauf durchführen.
+    - Optional: DB-Schema erweitern und Mapper anpassen.
 - **Fehlerbehebung Bild-Uploads im Admin-Bereich:** Uploads für Jobs/Kitas schlagen fehl oder Vorschau verschwindet.
 - **Vollständige CRUD-Logik für Jobs im Admin-Bereich:** Implementierung abschließen.
 - **Authentifizierung & Rollen im Admin-Bereich:** Fehlt aktuell (Sicherheitsrisiko).
@@ -81,4 +94,5 @@
 - Schrittweise Erweiterung des Admin-Bereichs
 - Mobile First & Performance-Optimierung im Frontend
 - Monetarisierung über Premium, Jobs, Kurse, Affiliate
-- **Kita-Import:** Ursprünglich direkter Import, jetzt über asynchronen Job mit Status-Tracking und detailliertem Logging. Fokus lag zunächst auf Fehlerbehebung (Typfehler, Build), jetzt auf Refaktorisierung und Stabilisierung des Scraping-Teils durch Aufteilung in Extraktor-Module.
+- **Kita-Import:** Ursprünglich direkter Import, jetzt über asynchronen Job mit Status-Tracking und detailliertem Logging. Der Fokus lag zunächst auf Fehlerbehebung (Typfehler, Build), dann auf Refaktorisierung und Stabilisierung des Scraping-Teils durch Aufteilung in Extraktor-Module. Diese Phase ist abgeschlossen und die gewonnenen Erkenntnisse sind als Best Practices dokumentiert (siehe oben und `activeContext.md`). Die korrekte Zuordnung von Bundesländern wurde sichergestellt.
+- **Admin-Import UI:** Umstellung der Bundesländer-Auswahl auf Konstanten zur Fehlervermeidung. Notwendigkeit eines Filters für die Bezirksliste erkannt.

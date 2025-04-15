@@ -116,6 +116,60 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      },
+      knowledge_posts: {
+        Row: {
+          id: string;
+          title: string;
+          slug: string;
+          date_published: string | null;
+          source_link: string | null;
+          full_path: string | null;
+          excerpt_rendered: string | null;
+          featured_media_url: string | null;
+          category_terms: string[] | null;
+          tag_terms: string[] | null;
+          authors: string[] | null;
+          teaser: string | null;
+          image_url: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          slug: string;
+          date_published?: string | null;
+          source_link?: string | null;
+          full_path?: string | null;
+          excerpt_rendered?: string | null;
+          featured_media_url?: string | null;
+          category_terms?: string[] | null;
+          tag_terms?: string[] | null;
+          authors?: string[] | null;
+          teaser?: string | null;
+          image_url?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          slug?: string;
+          date_published?: string | null;
+          source_link?: string | null;
+          full_path?: string | null;
+          excerpt_rendered?: string | null;
+          featured_media_url?: string | null;
+          category_terms?: string[] | null;
+          tag_terms?: string[] | null;
+          authors?: string[] | null;
+          teaser?: string | null;
+          image_url?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
       }
       jobs: {
         Row: {
@@ -196,7 +250,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_distinct_bezirke: { // Hinzugefügte RPC-Funktion
+        Args: {
+          p_bundesland: string
+        }
+        Returns: string[] // Annahme: Gibt ein Array von Strings zurück
+      }
     }
     Enums: {
       [_ in never]: never

@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Added Select
 import { Checkbox } from '@/components/ui/checkbox'; // Added Checkbox
+import { GERMAN_STATES } from '@/lib/constants'; // Import GERMAN_STATES
 
 // --- Type Definitions ---
 interface Bezirk {
@@ -47,12 +48,12 @@ const API_BASE_URL = 'http://localhost:3000/api/import'; // Corrected port to 30
 
 const AdminImport: React.FC = () => {
   // --- New State Variables ---
-  // Correct type for bundeslaender state: Array of objects
-  const [bundeslaender, setBundeslaender] = useState<{ name: string; url: string }[]>([]);
-  const [selectedBundeslandName, setSelectedBundeslandName] = useState<string | null>(null); // Store the name for display/UI state
-  const [selectedBundeslandUrl, setSelectedBundeslandUrl] = useState<string | null>(null); // Store the URL for API calls
+  // Removed bundeslaender state, use GERMAN_STATES directly
+  const [selectedBundeslandName, setSelectedBundeslandName] = useState<string | null>(null); // Store the name (label) for display/UI state
+  const [selectedBundeslandUrl, setSelectedBundeslandUrl] = useState<string | null>(null); // Store the URL (value) for API calls
   const [bezirke, setBezirke] = useState<Bezirk[]>([]);
   const [selectedBezirkeUrls, setSelectedBezirkeUrls] = useState<string[]>([]);
+  const [bezirkFilter, setBezirkFilter] = useState<string>(''); // State for the filter input
   const [kitaLimit, setKitaLimit] = useState<number>(10);
   // --- End New State Variables ---
 
@@ -70,29 +71,11 @@ const AdminImport: React.FC = () => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref to hold setTimeout ID for cleanup
 
   // --- Data Fetching Effects ---
-  useEffect(() => {
-    // Fetch Bundesländer on component mount
-    const fetchBundeslaender = async () => {
-      addLog('Frontend: Lade Bundesländer...');
-      try {
-        const response = await fetch(`${API_BASE_URL}/bundeslaender`);
-         if (!response.ok) {
-           throw new Error(`API Fehler (${response.status}) beim Laden der Bundesländer.`);
-         }
-         // Correct type for fetched data
-         const data: { name: string; url: string }[] = await response.json();
-         setBundeslaender(data);
-         addLog(`Frontend: Bundesländer geladen (${data.length} Einträge).`);
-       } catch (error) {
-        console.error('Error fetching bundeslaender:', error);
-        addLog(`ERROR fetching bundeslaender: ${error instanceof Error ? error.message : String(error)}`, 'error');
-        setStatus('Fehler beim Laden der Bundesländer.');
-      }
-    };
-    fetchBundeslaender();
+  // Removed useEffect for fetching Bundesländer
 
-    // Cleanup function to clear timeout on component unmount
-    return () => {
+  // Cleanup function to clear timeout on component unmount (Keep this part)
+  useEffect(() => {
+      return () => {
         if (timeoutRef.current) {
             console.log('[DEBUG] Clearing timeout on component unmount. Timeout ID:', timeoutRef.current);
             clearTimeout(timeoutRef.current);
@@ -164,13 +147,17 @@ const AdminImport: React.FC = () => {
 
   // --- Event Handlers ---
   const handleBundeslandChange = (value: string) => {
-    // Value from Select is the name (e.g., "Berlin")
-    const selectedName = value === 'none' ? null : value;
-    setSelectedBundeslandName(selectedName);
+    // Value from Select is the 'value' property (slug, e.g., "berlin")
+    const selectedValue = value === 'none' ? null : value;
 
-    // Find the corresponding URL from the bundeslaender state
-    const selectedBlObject = bundeslaender.find(bl => bl.name === selectedName);
-    setSelectedBundeslandUrl(selectedBlObject ? selectedBlObject.url : null);
+    // Find the full state object from the constant using the selected value (slug)
+    const selectedState = GERMAN_STATES.find(state => state.value === selectedValue);
+
+    // Set the URL state with the 'url' property from the found object
+    setSelectedBundeslandUrl(selectedState ? selectedState.url : null);
+    // Set the name state with the 'label' property for display
+    setSelectedBundeslandName(selectedState ? selectedState.label : null);
+    setBezirkFilter(''); // Reset filter when Bundesland changes
   };
 
   const handleBezirkChange = (checked: boolean | string, url: string) => {
@@ -448,19 +435,20 @@ const AdminImport: React.FC = () => {
               <Label htmlFor="bundesland">Bundesland</Label>
               <Select
                 onValueChange={handleBundeslandChange} // This function now sets both name and URL state
-                value={selectedBundeslandName ?? 'none'} // Control Select with the name state
-                disabled={isLoading || bundeslaender.length === 0}
+                value={selectedBundeslandUrl ?? 'none'} // Control Select with the URL/value state
+                disabled={isLoading || GERMAN_STATES.length === 0}
               >
                 <SelectTrigger id="bundesland">
                   <SelectValue placeholder="Bundesland auswählen..." />
                 </SelectTrigger>
                  <SelectContent>
                    <SelectItem value="none">Bitte auswählen...</SelectItem>
-                   {Array.isArray(bundeslaender) && bundeslaender.map((bl) => (
-                     // Key should be unique (url is good)
-                     // Value passed to onValueChange should be the name
-                     <SelectItem key={bl.url} value={bl.name}>
-                       {bl.name}
+                   {/* Map directly over GERMAN_STATES */}
+                   {GERMAN_STATES.map((state) => (
+                     // Key is the unique value (slug)
+                     // Value passed to onValueChange is the value (slug)
+                     <SelectItem key={state.value} value={state.value}>
+                       {state.label} {/* Display the label */}
                      </SelectItem>
                    ))}
                 </SelectContent>
@@ -472,9 +460,23 @@ const AdminImport: React.FC = () => {
             {selectedBundeslandName && (
               <div className="space-y-2">
                 <Label>Bezirke für {selectedBundeslandName}</Label>
+                {/* Filter Input */}
+                <Input
+                  type="text"
+                  placeholder="Bezirk filtern..."
+                  value={bezirkFilter}
+                  onChange={(e) => setBezirkFilter(e.target.value)}
+                  className="mb-2"
+                  disabled={isLoading || bezirke.length === 0}
+                />
                 {bezirke.length > 0 ? (
                   <div className="max-h-60 overflow-y-auto border rounded-md p-2 space-y-1">
-                    {bezirke.map((bezirk) => (
+                    {/* Filter bezirke before mapping */}
+                    {bezirke
+                      .filter(bezirk =>
+                        bezirk.name.toLowerCase().includes(bezirkFilter.toLowerCase())
+                      )
+                      .map((bezirk) => (
                       <div key={bezirk.url} className="flex items-center space-x-2">
                         <Checkbox
                           id={bezirk.url}

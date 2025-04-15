@@ -23,6 +23,29 @@ export function extractContact(
 ): ContactInfo {
   const contactInfo: ContactInfo = {};
 
+  // --- Kitaname extrahieren und loggen ---
+  const kitaName = $('h1 a').text().trim() || $('h1').text().trim();
+  if (kitaName) {
+    addLog(jobId, `[EXTRACT] Kita-Name: ${kitaName}`, 'info');
+  } else {
+    addLog(jobId, `[EXTRACT] Kein Kita-Name gefunden!`, 'warn');
+  }
+
+  // --- Adresse extrahieren und loggen (mit <br>-Split) ---
+  const addressHtml = $('p.address').html();
+  if (addressHtml) {
+    const addressLines = addressHtml.split(/<br\s*\/?\s*>/i).map(line => line.replace(/\s+/g, ' ').trim()).filter(Boolean);
+    addLog(jobId, `[EXTRACT] Adresse (Zeilen): ${addressLines.join(' | ')}`, 'info');
+    // Optional: Zeilen gezielt zuordnen
+    if (addressLines.length >= 2) {
+      addLog(jobId, `[EXTRACT] Straße: ${addressLines[0]}`, 'info');
+      addLog(jobId, `[EXTRACT] PLZ/Ort: ${addressLines[1]}`, 'info');
+      if (addressLines[2]) addLog(jobId, `[EXTRACT] Bezirk: ${addressLines[2]}`, 'info');
+    }
+  } else {
+    addLog(jobId, `[EXTRACT] Keine Adresse gefunden!`, 'warn');
+  }
+
   // --- Kontakt-Container finden (wie im Original) ---
   const potentialContainers = $('div.details, .kontakt, .contact, #kontakt, #contact, address, .adresse, #adresse, .sidebar, aside, .footer, footer');
   let contactContainer = potentialContainers.first() as cheerio.Cheerio<Element>;
@@ -102,7 +125,14 @@ export function extractContact(
     addLog(jobId, `Error extracting phone: ${message}`, 'warn');
   }
 
-  // --- Fax extrahieren ---
+  // --- Fax extrahieren und loggen ---
+  const faxText = $('p.fax').text().replace(/Fax:/i, '').trim();
+  if (faxText) {
+    addLog(jobId, `[EXTRACT] Fax: ${faxText}`, 'info');
+  } else {
+    addLog(jobId, `[EXTRACT] Kein Fax gefunden!`, 'warn');
+  }
+
   try {
     let faxFound = false;
     const faxSelectors = [

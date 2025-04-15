@@ -7,6 +7,7 @@ interface FetchCompaniesParams {
   keyword?: string;
   location?: string;
   bundesland?: string;
+  bezirk?: string; // Bezirk Parameter hinzugefügt
   isPremium?: boolean;
   limit?: number;
   offset?: number;
@@ -16,28 +17,36 @@ export async function fetchCompanies({
   keyword = '',
   location = '',
   bundesland,
+  bezirk, // Bezirk Parameter hinzugefügt
   isPremium,
   limit = 20,
   offset = 0
 }: FetchCompaniesParams = {}) {
   try {
+    // Start the query without explicit type
     let query = supabase
       .from('companies')
       .select('*', { count: 'exact' });
 
-    // Filter by keyword (name or description)
+    // Filter by keyword (simplified: only name)
     if (keyword) {
-      query = query.or(`name.ilike.%${keyword}%,description.ilike.%${keyword}%`);
+      query = query.ilike('name', `%${keyword}%`);
     }
 
-    // Filter by location
+    // Filter by location (simplified: only location field)
     if (location) {
-      query = query.or(`location.ilike.%${location}%,bundesland.ilike.%${location}%`);
+      query = query.ilike('location', `%${location}%`);
     }
 
     // Filter by bundesland
     if (bundesland) {
       query = query.eq('bundesland', bundesland);
+    }
+
+    // Filter by bezirk (only if bundesland is also selected)
+    if (bundesland && bezirk) {
+      // Assuming the column name in the 'companies' table is 'bezirk'
+      query = query.eq('bezirk', bezirk); 
     }
 
     // Filter by premium status

@@ -52,24 +52,22 @@ export function extractDescriptionAndHours(
     let foundInSpecificContainer = false;
 
     if (descContainer.length > 0) {
-      // Extract paragraphs within the container, avoid short/utility paragraphs
-      descriptionText = descContainer.find('p').map((_, p) => $(p).text().trim()).get().filter(t => t.length > 20).join('\n\n');
-      if (!descriptionText) { // Fallback if only divs are used
-        descriptionText = descContainer.children('div').map((_, d) => $(d).text().trim()).get().filter(t => t.length > 20).join('\n\n');
-      }
+      // NEU: Übernehme das HTML der Beschreibung, nicht nur den Text
+      descriptionText = descContainer.html()?.trim() || '';
       if (descriptionText) {
-          addLog(jobId, `Description/Concept found in specific container: ${descContainer.attr('id') || '.' + descContainer.attr('class')}`, LogLevel.INFO);
-          foundInSpecificContainer = true;
-          // Check if the container specifically mentions 'Konzept'
-          const containerId = descContainer.attr('id')?.toLowerCase() || '';
-          const containerClass = descContainer.attr('class')?.toLowerCase() || '';
-          if (containerId.includes('konzept') || containerClass.includes('konzept')) {
-              descriptionInfo.paedagogisches_konzept = descriptionText.replace(/\s+/g, ' ').trim();
-              // Avoid setting description if it's clearly just the concept
-              if (!containerId.includes('beschreibung') && !containerClass.includes('beschreibung')) {
-                  descriptionText = ''; // Clear description if it was only the concept
-              }
+        addLog(jobId, `Description/Concept found in specific container (HTML übernommen): ${descContainer.attr('id') || '.' + descContainer.attr('class')}`, LogLevel.INFO);
+        foundInSpecificContainer = true;
+        // Check if the container specifically mentions 'Konzept'
+        const containerId = descContainer.attr('id')?.toLowerCase() || '';
+        const containerClass = descContainer.attr('class')?.toLowerCase() || '';
+        if (containerId.includes('konzept') || containerClass.includes('konzept')) {
+          // Konzept ggf. als reinen Text extrahieren
+          descriptionInfo.paedagogisches_konzept = descContainer.text().replace(/\s+/g, ' ').trim();
+          // Avoid setting description if it's clearly just the concept
+          if (!containerId.includes('beschreibung') && !containerClass.includes('beschreibung')) {
+            descriptionText = '';
           }
+        }
       }
     }
 

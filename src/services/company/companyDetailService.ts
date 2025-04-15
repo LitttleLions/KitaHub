@@ -14,8 +14,10 @@ export const fetchCompanyById = async (id: string): Promise<Company | null> => {
       review_count, created_at, updated_at, latitude, longitude, street, 
       house_number, postal_code, city, is_premium, premium_until, 
       has_open_positions, video_url, certifications, special_pedagogy, 
-      awards, bundesland
-    `;
+      awards, bundesland, 
+      sponsor_name, sponsor_type, capacity_total, capacity_free, 
+      opening_hours_text, association, min_age, max_age, source_url 
+    `; // Added missing fields
     const { data, error } = await supabase
       .from('companies')
       .select(selectFields)

@@ -1,6 +1,7 @@
 // Import interfaces/types needed
 import type { Company } from '../types/company.js';
 import type { RawKitaDetails } from '../types/company.d.ts';
+import { mapToBundeslandDbValue } from '../config/germanStates.js';
 
 /**
  * Maps the raw scraped data and context to the structure defined by the Company type.
@@ -40,7 +41,8 @@ export function mapKitaData(rawData: RawKitaDetails, bundeslandName: string, bez
       postal_code: rawData.plz || undefined,
       city: rawData.ort || undefined, // City extracted from address block
       location: bezirkName || rawData.bezirk || undefined, // Map Bezirk name to 'location' column
-      bundesland: bundeslandName || undefined, // Use passed Bundesland name
+      bundesland: mapToBundeslandDbValue(bundeslandName) || undefined, // Immer DB-konformen Wert speichern
+      type: rawData.kita_typ || undefined, // Map extracted kita_typ to the 'type' field
       house_number: rawData.house_number || undefined, // Added house_number
       phone: rawData.phone || undefined, // Added phone
       email: rawData.email || undefined, // Added email
@@ -50,12 +52,13 @@ export function mapKitaData(rawData: RawKitaDetails, bundeslandName: string, bez
       description: rawData.description || undefined, // Added description
       sponsor_name: rawData.traeger || undefined,
       sponsor_type: rawData.traegertyp || undefined,
-      capacity_total: rawData.plaetze_gesamt || undefined,
-      capacity_free: rawData.freie_plaetze || undefined,
+      // Convert numbers to strings for the Company interface
+      capacity_total: rawData.plaetze_gesamt !== undefined ? String(rawData.plaetze_gesamt) : undefined,
+      capacity_free: rawData.freie_plaetze !== undefined ? String(rawData.freie_plaetze) : undefined,
       opening_hours_text: rawData.oeffnungszeiten || undefined,
       association: rawData.dachverband || undefined,
-      min_age: rawData.betreuungsalter_von || undefined,
-      max_age: rawData.betreuungsalter_bis || undefined,
+      min_age: rawData.betreuungsalter_von !== undefined ? String(rawData.betreuungsalter_von) : undefined,
+      max_age: rawData.betreuungsalter_bis !== undefined ? String(rawData.betreuungsalter_bis) : undefined,
       special_pedagogy: rawData.paedagogisches_konzept || undefined,
       cover_image_url: rawData.cover_image_url || undefined, // Keep cover image
       // gallery: rawData.gallery || undefined, // Temporarily remove - DB column missing

@@ -40,33 +40,34 @@ export interface Company {
 
 // Interface for the raw, potentially incomplete data scraped from a detail page
 export interface RawKitaDetails {
-    source_url: string;
-    name?: string;
-    strasse?: string;
-    plz?: string;
-    ort?: string;
-    bezirk?: string;
-    address_full?: string; // Fallback
-    traeger?: string;
-    traegertyp?: string;
-    dachverband?: string;
-    plaetze_gesamt?: string; // Keep as string initially from scraping
-    freie_plaetze?: string; // Keep as string initially from scraping
-    betreuungszeit?: string;
-    betreuungsalter_von?: string; // Keep as string initially from scraping
-    betreuungsalter_bis?: string; // Keep as string initially from scraping
-    paedagogisches_konzept?: string;
-    oeffnungszeiten?: string;
-    website?: string;
-    phone?: string;
-    email?: string;
-    logo_url?: string;
-    cover_image_url?: string;
-    gallery?: string[];
-    benefits?: string[];
-    certifications?: string[];
-    awards?: string[];
-    video_url?: string;
-    house_number?: string;
-    description?: string;
+  source_url: string;
+  logo_url?: string;
+  cover_image_url?: string;
+  name?: string;
+  strasse?: string;
+  house_number?: string;
+  plz?: string;
+  ort?: string;
+  bezirk?: string;
+  address_full?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  traeger?: string;
+  traegertyp?: string;
+  dachverband?: string;
+  plaetze_gesamt?: string;
+  freie_plaetze?: string;
+  betreuungszeit?: string;
+  betreuungsalter_von?: string;
+  betreuungsalter_bis?: string;
+  paedagogisches_konzept?: string;
+  description?: string;
+  oeffnungszeiten?: string;
+  gallery?: string[];
+  video_url?: string;
+  benefits?: string[];
+  certifications?: string[];
+  awards?: string[];
+  kita_typ?: string;
 }

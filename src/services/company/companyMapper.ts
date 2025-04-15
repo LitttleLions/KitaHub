@@ -39,6 +39,16 @@ export function mapToCompany(item: any): Company {
     certifications: processJsonField(item.certifications),
     awards: processJsonField(item.awards),
     bundesland: item.bundesland || "",
-    premium_until: item.premium_until
+    premium_until: item.premium_until,
+    // Add mappings for newly fetched fields
+    sponsor_name: item.sponsor_name || "",
+    sponsor_type: item.sponsor_type || "",
+    capacity_total: item.capacity_total || "",
+    capacity_free: item.capacity_free || "",
+    opening_hours_text: item.opening_hours_text || "",
+    association: item.association || "",
+    min_age: item.min_age || "",
+    max_age: item.max_age || "",
+    source_url: item.source_url || ""
   };
 }

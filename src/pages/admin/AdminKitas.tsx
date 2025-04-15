@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; // Import useState
+import React, { useState, useMemo } from 'react'; // Import useMemo
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'; // Import useMutation, useQueryClient
 import { useNavigate } from 'react-router-dom';
 import { fetchCompanies } from '@/services/company/companyListService';
@@ -32,11 +32,18 @@ const AdminKitas: React.FC = () => {
   const queryClient = useQueryClient(); // Get query client
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [kitaToDelete, setKitaToDelete] = useState<Company | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10; // Define page size
+
+  const offset = useMemo(() => (currentPage - 1) * pageSize, [currentPage, pageSize]);
 
   const { data, isLoading, error, isError } = useQuery<{ companies: Company[], total: number }, Error>({
-    queryKey: ['adminCompanies'],
-    queryFn: () => fetchCompanies({ limit: 1000 }), // Fetch all for now
+    queryKey: ['adminCompanies', currentPage, pageSize], // Include page and size in query key
+    queryFn: () => fetchCompanies({ limit: pageSize, offset: offset }), // Pass limit and offset
+    // keepPreviousData removed, often default in v5 or placeholderData is used
   });
+
+  const totalPages = data?.total ? Math.ceil(data.total / pageSize) : 0; // Optional chaining for data.total
 
   // Mutation for deleting a company
   const deleteMutation = useMutation({
@@ -109,18 +116,24 @@ const AdminKitas: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[50px]">Nr.</TableHead>
+              <TableHead className="w-[200px]">ID</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Stadt</TableHead>
+              <TableHead>Standort</TableHead> {/* Neue Spalte */}
               <TableHead>Bundesland</TableHead>
               <TableHead>Premium</TableHead>
               <TableHead className="text-right">Aktionen</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.companies.map((kita) => (
+            {data?.companies?.map((kita, index) => ( // Optional chaining for data.companies
               <TableRow key={kita.id}>
+                <TableCell>{offset + index + 1}</TableCell> {/* Angepasste Laufende Nummer */}
+                <TableCell className="font-mono text-xs">{kita.id}</TableCell> {/* ID Spalte */}
                 <TableCell className="font-medium">{kita.name}</TableCell>
-                <TableCell>{kita.city || kita.location || 'N/A'}</TableCell> {/* Fallback for city */}
+                <TableCell>{kita.city || 'N/A'}</TableCell> {/* Behält Stadt */}
+                <TableCell>{kita.location || 'N/A'}</TableCell> {/* Standort Spalte */}
                 <TableCell>{kita.bundesland || 'N/A'}</TableCell>
                 <TableCell>
                   {kita.is_premium ? (
@@ -151,9 +164,9 @@ const AdminKitas: React.FC = () => {
                 </TableCell>
               </TableRow>
             ))}
-             {data.companies.length === 0 && (
+             {data?.companies?.length === 0 && !isLoading && ( // Check isLoading too
                <TableRow>
-                 <TableCell colSpan={5} className="text-center text-muted-foreground">
+                 <TableCell colSpan={8} className="text-center text-muted-foreground"> {/* Adjusted colSpan */}
                    Keine Kitas gefunden.
                  </TableCell>
                </TableRow>
@@ -161,7 +174,30 @@ const AdminKitas: React.FC = () => {
           </TableBody>
         </Table>
       )}
-       {/* TODO: Add Pagination later */}
+      {/* Pagination Controls */}
+      {data?.total && totalPages > 1 && ( // Optional chaining for data.total
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1 || isLoading}
+          >
+            Zurück
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Seite {currentPage} von {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages || isLoading}
+          >
+            Weiter
+          </Button>
+        </div>
+      )}
       </div>
 
       {/* Delete Confirmation Dialog */}

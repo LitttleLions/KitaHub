@@ -7,6 +7,7 @@ import type { RawKitaDetails } from '../types/company.d.ts';
 import { getBundeslandUrlsAndNames, getBezirkUrlsAndNames, getKitaUrlsFromBezirkPage, scrapeKitaDetails } from '../scrapers/kitaDeScraper.js';
 import { mapKitaData } from '../mappers/kitaDeMapper.js';
 import { importConfig } from '../config/importConfig.js';
+import { GERMAN_STATES } from '../config/germanStates.js'; // Import GERMAN_STATES
 import { addLog, updateJobStatus } from './importStatusService.js';
 import { supabase } from '../supabaseClient.js';
 
@@ -83,19 +84,24 @@ async function runImportProcess(
 
     let totalKitasProcessed = 0;
     let totalKitasSaved = 0;
-    let overallProgress = 0;
+     let overallProgress = 0;
 
-    // Helper function to extract Bundesland name from Bezirk URL (simple approach)
-    const getBundeslandNameFromUrl = (url: string): string | undefined => {
-        try {
-            const pathParts = new URL(url).pathname.split('/');
-            // Assuming URL structure like /kitas/bundesland/bezirk
-            if (pathParts.length >= 3 && pathParts[1] === 'kitas') {
-                // Capitalize first letter, replace hyphens with spaces
-                return pathParts[2].charAt(0).toUpperCase() + pathParts[2].slice(1).replace(/-/g, ' ');
-            }
-        } catch (e) {
-            console.error(`[${jobId}] Error parsing Bundesland from URL ${url}:`, e);
+     // Helper function to extract the correct Bundesland DB value from Bezirk URL
+     const getBundeslandDbValueFromUrl = (url: string): string | undefined => {
+         try {
+             const pathParts = new URL(url).pathname.split('/');
+             // Assuming URL structure like /kitas/bundesland-slug/bezirk
+             if (pathParts.length >= 3 && pathParts[1] === 'kitas') {
+                 const bundeslandSlug = pathParts[2]; // e.g., 'mecklenburg-vorpommern'
+                 const foundState = GERMAN_STATES.find(state => state.value === bundeslandSlug);
+                 if (foundState) {
+                     return foundState.dbValue; // Return the exact DB value like "Mecklenburg-Vorpommern"
+                 } else {
+                     console.warn(`[${jobId}] Bundesland slug '${bundeslandSlug}' from URL ${url} not found in GERMAN_STATES.`);
+                 }
+             }
+         } catch (e) {
+             console.error(`[${jobId}] Error parsing Bundesland DB value from URL ${url}:`, e);
         }
         return undefined;
     };
@@ -113,18 +119,18 @@ async function runImportProcess(
 
          // --- Process each provided Bezirk ---
          for (let bzIndex = 0; bzIndex < totalBezirkeToProcess; bzIndex++) {
-             const currentBezirk = bezirkeToProcess[bzIndex];
-             const bezirkName = currentBezirk.name;
-             const bezirkUrl = currentBezirk.url;
-             const bundeslandName = getBundeslandNameFromUrl(bezirkUrl); // Extract Bundesland name
+              const currentBezirk = bezirkeToProcess[bzIndex];
+              const bezirkName = currentBezirk.name;
+              const bezirkUrl = currentBezirk.url;
+              const bundeslandDbValue = getBundeslandDbValueFromUrl(bezirkUrl); // Get correct DB value
 
-             console.log(`[${jobId}] Processing Bezirk ${bzIndex + 1}/${totalBezirkeToProcess}: ${bezirkName} (${bundeslandName || 'Bundesland unbekannt'}) - URL: ${bezirkUrl}`);
-             addLog(jobId, `  Processing Bezirk: ${bezirkName} (${bundeslandName || 'Bundesland unbekannt'})`);
+              console.log(`[${jobId}] Processing Bezirk ${bzIndex + 1}/${totalBezirkeToProcess}: ${bezirkName} (Bundesland DB: ${bundeslandDbValue || 'unbekannt'}) - URL: ${bezirkUrl}`);
+              addLog(jobId, `  Processing Bezirk: ${bezirkName} (Bundesland DB: ${bundeslandDbValue || 'unbekannt'})`);
 
-             if (!bundeslandName) {
-                 addLog(jobId, `    Could not determine Bundesland for ${bezirkUrl}. Skipping Bezirk.`, 'warn');
-                 continue; // Skip this Bezirk if Bundesland cannot be determined
-             }
+              if (!bundeslandDbValue) {
+                  addLog(jobId, `    Could not determine Bundesland DB value for ${bezirkUrl}. Skipping Bezirk.`, 'warn');
+                  continue; // Skip this Bezirk if Bundesland cannot be determined
+              }
 
              // Use the passed kitaLimitPerBezirk
              const kitaUrls = await getKitaUrlsFromBezirkPage(jobId, bezirkUrl, kitaLimitPerBezirk);
@@ -148,13 +154,13 @@ async function runImportProcess(
                      const rawDetails: RawKitaDetails | null = await scrapeKitaDetails(jobId, kitaUrl);
                      console.log(`[${jobId}] Scraped details for ${kitaUrl}. Details found: ${!!rawDetails}`);
 
-                     if (rawDetails) {
-                         addLog(jobId, `      -> Extracted: ${rawDetails.name} (${rawDetails.ort || 'Ort unbekannt'})`);
-                         // Pass Bundesland and Bezirk names to the mapper
-                         const mappedData = mapKitaData(rawDetails, bundeslandName, bezirkName);
-                         addLog(jobId, `      -> MappedData Keys: ${Object.keys(mappedData).join(', ')}`);
+                      if (rawDetails) {
+                          addLog(jobId, `      -> Extracted: ${rawDetails.name} (${rawDetails.ort || 'Ort unbekannt'})`);
+                          // Pass correct Bundesland DB value and Bezirk name to the mapper
+                          const mappedData = mapKitaData(rawDetails, bundeslandDbValue, bezirkName);
+                          addLog(jobId, `      -> MappedData Keys: ${Object.keys(mappedData).join(', ')}`);
 
-                         // Synchronize access to batchToSave or handle results differently
+                          // Synchronize access to batchToSave or handle results differently
                          // For simplicity here, we push directly, but consider locking or queueing for robustness
                          if (dryRun) {
                              addLog(jobId, `      -> Dry run: mappedData erzeugt (nicht gespeichert)`);

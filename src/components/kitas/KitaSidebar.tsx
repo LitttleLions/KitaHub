@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Filter, Award } from 'lucide-react';
+import React, { useState, useEffect } from 'react'; // Korrigierter Import
+import { Filter, Award, MapPinned } from 'lucide-react'; // MapPinned importieren
 import { 
   Select,
   SelectContent,
@@ -10,60 +10,53 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { GERMAN_STATES } from '@/lib/constants'; // Importiere die zentrale Konstante
+import { fetchBezirkeByBundesland } from '@/services/metaService'; // Importiere die neue Service-Funktion
 
 interface KitaSidebarProps {
   bundesland: string;
   handleBundeslandChange: (value: string) => void;
+  selectedBezirk: string; // Bezirk State Prop
+  handleBezirkChange: (value: string) => void; // Bezirk Handler Prop
   showPremiumOnly: boolean;
   togglePremiumFilter: () => void;
 }
 
-const BUNDESLAENDER = [
-  "all", // Changed from "Alle Bundesländer" to a valid value "all"
-  "Baden-Württemberg",
-  "Bayern",
-  "Berlin",
-  "Brandenburg",
-  "Bremen",
-  "Hamburg",
-  "Hessen",
-  "Mecklenburg-Vorpommern",
-  "Niedersachsen",
-  "Nordrhein-Westfalen",
-  "Rheinland-Pfalz",
-  "Saarland",
-  "Sachsen",
-  "Sachsen-Anhalt",
-  "Schleswig-Holstein",
-  "Thüringen"
-];
-
-const BUNDESLAENDER_LABELS = {
-  "all": "Alle Bundesländer",
-  "Baden-Württemberg": "Baden-Württemberg",
-  "Bayern": "Bayern",
-  "Berlin": "Berlin",
-  "Brandenburg": "Brandenburg",
-  "Bremen": "Bremen",
-  "Hamburg": "Hamburg",
-  "Hessen": "Hessen",
-  "Mecklenburg-Vorpommern": "Mecklenburg-Vorpommern",
-  "Niedersachsen": "Niedersachsen",
-  "Nordrhein-Westfalen": "Nordrhein-Westfalen",
-  "Rheinland-Pfalz": "Rheinland-Pfalz",
-  "Saarland": "Saarland",
-  "Sachsen": "Sachsen",
-  "Sachsen-Anhalt": "Sachsen-Anhalt",
-  "Schleswig-Holstein": "Schleswig-Holstein",
-  "Thüringen": "Thüringen"
-};
-
 const KitaSidebar: React.FC<KitaSidebarProps> = ({
   bundesland,
   handleBundeslandChange,
+  selectedBezirk,
+  handleBezirkChange,
   showPremiumOnly,
   togglePremiumFilter
 }) => {
+  const [bezirke, setBezirke] = useState<string[]>([]); // State für Bezirksliste
+  const [loadingBezirke, setLoadingBezirke] = useState(false);
+
+  // Effekt zum Laden der Bezirke, wenn sich das Bundesland ändert
+  useEffect(() => {
+    if (bundesland && bundesland !== 'all') {
+      setLoadingBezirke(true);
+      fetchBezirkeByBundesland(bundesland)
+        .then(data => {
+          setBezirke(data || []);
+          // Reset Bezirk selection if the new list doesn't include the current selection
+          if (data && !data.includes(selectedBezirk)) {
+             handleBezirkChange('all'); // Reset to 'all'
+          }
+        })
+        .catch(error => {
+          console.error("Fehler beim Laden der Bezirke:", error);
+          setBezirke([]);
+        })
+        .finally(() => setLoadingBezirke(false));
+    } else {
+      setBezirke([]); // Clear bezirke if no state or 'all' is selected
+      handleBezirkChange('all'); // Reset Bezirk selection
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bundesland]); // Dependency: bundesland
+
   return (
     <div className="bg-white rounded-lg border p-4 sticky top-24">
       <h3 className="font-semibold text-lg mb-4 flex items-center">
@@ -79,14 +72,40 @@ const KitaSidebar: React.FC<KitaSidebarProps> = ({
             <SelectValue placeholder="Bundesland auswählen" />
           </SelectTrigger>
           <SelectContent>
-            {BUNDESLAENDER.map((state) => (
-              <SelectItem key={state} value={state}>
-                {BUNDESLAENDER_LABELS[state]}
+            <SelectItem value="all">Alle Bundesländer</SelectItem>
+            {GERMAN_STATES.map((state) => (
+              <SelectItem key={state.value} value={state.value}>
+                {state.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
+
+      {/* Bezirk Filter (conditionally rendered) */}
+      {bundesland && bundesland !== 'all' && (
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Bezirk / Landkreis
+          </label>
+          <Select value={selectedBezirk} onValueChange={handleBezirkChange} disabled={loadingBezirke || bezirke.length === 0}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={loadingBezirke ? "Lade Bezirke..." : "Bezirk auswählen"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Bezirke</SelectItem>
+              {bezirke.map((bezirk) => (
+                <SelectItem key={bezirk} value={bezirk}>
+                  {bezirk}
+                </SelectItem>
+              ))}
+              {bezirke.length === 0 && !loadingBezirke && (
+                 <SelectItem value="none" disabled>Keine Bezirke gefunden</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       
       <div className="mb-6 pt-4 border-t border-gray-100">
         <div className="flex items-center justify-between space-x-2">

@@ -5,11 +5,11 @@ export interface TableData {
   traeger?: string;
   traegertyp?: string;
   dachverband?: string;
-  plaetze_gesamt?: string;
-  freie_plaetze?: string;
+  plaetze_gesamt?: number; // Changed to number
+  freie_plaetze?: number; // Changed to number
   betreuungszeit?: string;
-  betreuungsalter_von?: string;
-  betreuungsalter_bis?: string;
+  betreuungsalter_von?: number; // Changed to number
+  betreuungsalter_bis?: number; // Changed to number
   paedagogisches_konzept?: string;
 }
 
@@ -29,6 +29,11 @@ export function extractTableData(
           const header = $(cells[0]).text().trim().replace(':', '');
           const value = $(cells[1]).text().trim();
           const lowerHeader = header.toLowerCase();
+          const parseNumber = (str: string): number | undefined => {
+            const num = parseInt(str.replace(/\D/g, ''), 10); // Remove non-digits and parse
+            return isNaN(num) ? undefined : num;
+          };
+
           if (header === "Träger") {
             data.traeger = value;
           } else if (lowerHeader.includes("trägertyp")) {
@@ -38,19 +43,23 @@ export function extractTableData(
           } else if (lowerHeader.includes("plätze") && lowerHeader.includes("freie")) {
             const match = value.match(/(\d+)\s*\/\s*(\?|\d+)/);
             if (match) {
-              data.plaetze_gesamt = match[1];
-              data.freie_plaetze = match[2];
+              data.plaetze_gesamt = parseNumber(match[1]);
+              // Only parse freie_plaetze if it's a number, otherwise leave undefined
+              if (match[2] !== '?') {
+                data.freie_plaetze = parseNumber(match[2]);
+              }
             } else {
-              data.plaetze_gesamt = value;
-              data.freie_plaetze = "?";
-              addLog(jobId, `Could not parse Plätze format: ${value}`, LogLevel.WARN);
+              // Try parsing the whole value if format is unexpected
+              data.plaetze_gesamt = parseNumber(value);
+              addLog(jobId, `Could not parse Plätze format: ${value}. Attempted to parse as single number.`, LogLevel.WARN);
             }
           } else if (lowerHeader.includes("betreuungszeit")) {
             data.betreuungszeit = value;
           } else if (lowerHeader.includes("aufnahmealter")) {
-            data.betreuungsalter_von = value.replace(/ab\s*/i, '').trim();
+            data.betreuungsalter_von = parseNumber(value);
           } else if (lowerHeader.includes("betreuungsalter") && !lowerHeader.includes("aufnahme")) {
-            data.betreuungsalter_bis = value.replace(/bis\s*/i, '').trim();
+             // Assuming this refers to the upper age limit
+            data.betreuungsalter_bis = parseNumber(value);
           } else if (lowerHeader.includes("pädagogisches konzept")) {
             data.paedagogisches_konzept = value;
           }

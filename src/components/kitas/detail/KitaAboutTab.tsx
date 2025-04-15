@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Clock, MapPin, Globe, Phone, Mail, Calendar, Building, Users, CheckCircle } from 'lucide-react';
+import { Clock, MapPin, Globe, Phone, Mail, Calendar, Building, Users, CheckCircle, Briefcase, Info } from 'lucide-react'; // Added Briefcase, Info
 import { Badge } from '@/components/ui/badge';
 import { Company } from '@/types/company';
 import KitaPremiumSection from './KitaPremiumSection';
@@ -113,7 +113,42 @@ const KitaAboutTab: React.FC<KitaAboutTabProps> = ({ kita, defaultBenefits }) =>
             </div>
           )}
           
-          {kita.employees && (
+          {/* Added Opening Hours */}
+          {kita.opening_hours_text && (
+            <div className="flex items-start">
+              <Clock className="h-5 w-5 text-kita-orange mr-3 mt-0.5" />
+              <div>
+                <p className="font-medium">Öffnungszeiten</p>
+                <p className="text-gray-600 whitespace-pre-wrap">{kita.opening_hours_text}</p> 
+              </div>
+            </div>
+          )}
+
+          {/* Added Capacity */}
+          {kita.capacity_total && (
+            <div className="flex items-start">
+              <Users className="h-5 w-5 text-kita-orange mr-3 mt-0.5" /> 
+              <div>
+                <p className="font-medium">Plätze Gesamt</p>
+                <p className="text-gray-600">{kita.capacity_total}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Added Sponsor Info */}
+          {(kita.sponsor_name || kita.sponsor_type) && (
+             <div className="flex items-start">
+               <Briefcase className="h-5 w-5 text-kita-orange mr-3 mt-0.5" />
+               <div>
+                 <p className="font-medium">Träger</p>
+                 {kita.sponsor_name && <p className="text-gray-600">{kita.sponsor_name}</p>}
+                 {kita.sponsor_type && <p className="text-gray-500 text-sm">{kita.sponsor_type}</p>}
+               </div>
+             </div>
+          )}
+
+          {/* Placeholder for employees if needed later */}
+          {/* {kita.employees && (
             <div className="flex items-start">
               <Users className="h-5 w-5 text-kita-orange mr-3 mt-0.5" />
               <div>
@@ -121,7 +156,7 @@ const KitaAboutTab: React.FC<KitaAboutTabProps> = ({ kita, defaultBenefits }) =>
                 <p className="text-gray-600">{kita.employees}</p>
               </div>
             </div>
-          )}
+          )} */}
         </div>
         
         <div className="mt-8">

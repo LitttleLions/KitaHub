@@ -8,7 +8,7 @@
     "build": "tsc --project tsconfig.json",
     "start": "node dist/server.js",
     "watch": "tsc --project tsconfig.json --watch",
-    "dev": "concurrently -k -n TSC,NODE -c yellow,cyan \"npm run watch\" \"nodemon dist/server.js\""
+    "dev": "nodemon --watch src --ext ts,js,json --exec \"tsx src/server.ts\""
   },
   "author": "",
   "license": "ISC",

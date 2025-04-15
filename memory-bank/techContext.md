@@ -18,9 +18,13 @@
 - **Backend:**
   - Node.js + Express (Import-Service)
   - axios, cheerio (Scraping)
+  - **Datenverarbeitung (Import):**
+    - Flexible Typdefinitionen für Rohdaten (z.B. `string` statt `number` in `RawKitaDetails`) zur Abfederung von Scraper-Inkonsistenzen.
+    - Explizite Typumwandlung (z.B. `String(...)`) im Mapper zur Sicherstellung der Zieltypen.
 - **Datenbank:**
   - Supabase (Postgres)
   - Tabellen: `companies`, `jobs`, `users`, `courses`
+  - **Erweiterte Typisierung:** Die Tabelle `knowledge_posts` wurde in `src/integrations/supabase/types.ts` vollständig typisiert und steht nun im gesamten Projekt für den Supabase-Client zur Verfügung.
 - **Containerisierung:**
   - Docker, docker-compose
 - **Tracking:**
@@ -30,9 +34,9 @@
 
 ## Entwicklungs-Setup
 
-- **Containerisiert:** Frontend & Backend laufen in Docker-Containern
-- **Hot Reload:** Vite (Frontend), nodemon (Backend)
-- **Volumes:** Quellcode gemountet für Live-Reload
+- **Containerisiert:** Frontend & Backend laufen in Docker-Containern (siehe `progress.md` für aktuellen Status bzgl. lokaler Entwicklung).
+- **Hot Reload:** Vite (Frontend), `nodemon` + `ts-node` (Backend via `npm run dev`).
+- **Volumes:** Quellcode gemountet für Live-Reload (relevant bei Docker-Nutzung).
 - **Healthchecks:** für beide Container aktiv
 - **Start (Docker):** `docker-compose up --build`
 - **API-Kommunikation (Docker):** HTTP im Docker-Netzwerk
