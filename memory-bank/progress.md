@@ -89,6 +89,29 @@
     - Zeigt nun die 3 neuesten Kinderwelt-Geschichten unterhalb der neuesten Wissensbeiträge an.
     - Datenabruf für Geschichten via `fetchStoryCatalog` mit `limit: 3` implementiert.
     - Verarbeitung der `category_terms` zur Anzeige aller Kategorien robuster gestaltet.
+- **Vereinheitlichte Kita-Titelbild-Anzeige:** Implementiert und funktionsfähig. Die zentrale Funktion `getDisplayCoverImageUrl` (`src/utils/dataFormatUtils.ts`) sorgt für konsistente und visuell ansprechendere Bilder (spezifisch oder konsistentes Zufallsbild) in allen relevanten Komponenten (`KitaCard`, `FeaturedKitaCard`, `HorizontalKitaCard`, `KitaDetailHeader`).
+- **Paginierter Wissensimport:** Implementiert und funktionsfähig.
+    - Backend-Service (`knowledgeImportService.ts`) kann nun mehrere Seiten abrufen, **integriert den `importStatusService` für detailliertes Logging und Fortschritts-Updates** und **extrahiert Breadcrumb-Daten aus dem `yoast_json`-Feld.**
+    - Neuer API-Endpunkt (`POST /api/import/knowledge`) erstellt, **der den Import asynchron startet, eine Job-ID zurückgibt und den Job-Status initialisiert.**
+    - Admin-Seite (`/admin/knowledge`, `KnowledgeAdminPage.tsx`) wurde überarbeitet und erlaubt die Steuerung des Imports über Paginierungsparameter (Startseite, Limit, Seitenanzahl) und Dry-Run-Option.
+    - Die Admin-Seite für den Kita-Import (`/admin/import`, `AdminImport.tsx`) wurde wieder in ihren ursprünglichen Zustand versetzt (nur Kita-Import).
+- **Admin Wissensbeitragsliste & Editierung:** Implementiert und funktionsfähig (siehe `activeContext.md` für Details).
+- **Admin Wissensimport (`/admin/knowledge`):**
+    - **Gezielter Import implementiert:** Neue UI-Sektion hinzugefügt, um nach Stichwörtern in WordPress zu suchen, Ergebnisse auszuwählen und gezielt zu importieren (`KnowledgeAdminPage.tsx`).
+    - **Exakte Titelsuche:** Möglichkeit hinzugefügt, durch Umschließen des Suchbegriffs mit Anführungszeichen exakt nach Titeln zu suchen.
+    - **Dry Run korrigiert:** Die Dry-Run-Option für den gezielten Import funktioniert nun korrekt.
+    - **Backend erweitert:** Neue Suchfunktion (`searchWordPressKnowledgePosts`) und Anpassung der Importfunktion (`importKnowledgePosts`) im `knowledgeImportService.ts`. Neue API-Routen (`/search`, `/specific`) in `importRoutes.ts` hinzugefügt.
+- **Wissens-Detailseite (`KnowledgePostPage.tsx`):**
+    - **Breadcrumbs implementiert:** Anzeige der Breadcrumbs unterhalb des Hero-Bereichs, Daten werden korrekt aus `yoast_json` extrahiert und angezeigt. Supabase-Typen wurden aktualisiert.
+    - **Kategorie-Links hinzugefügt:** Kategorien des Beitrags werden als klickbare Links unter den Breadcrumbs angezeigt.
+- **Kitas-Seite (`/kitas`, `Kitas.tsx`):**
+    - **"In den Medien"-Block entfernt.**
+    - **"Weitere Kitas entdecken"-Block hinzugefügt:** Zeigt nun 12 zufällig ausgewählte Kitas an (analog zur Startseite).
+- **Startseite (`Index.tsx`):**
+    - **"Weitere Kitas entdecken"-Block:** Zeigt nun 12 (statt 20) zufällig ausgewählte Kitas an.
+- **Zufällige Kitas (`kitaService.ts`):**
+    - Funktion `fetchRandomKitas` verbessert, um eine bessere Zufallsauswahl zu gewährleisten (clientseitiges Mischen).
+- **Typ-Korrekturen:** Diverse TypeScript-Fehler im Zusammenhang mit dem `Company`-Typ (insb. `gallery`, `capacity_total`, `benefits`, `awards`, `certifications`) behoben durch Anpassung der Typdefinition (`src/types/company.ts`) und der verwendenden Komponenten (`Index.tsx`, `KitaContactSidebar.tsx`).
 
 ---
 

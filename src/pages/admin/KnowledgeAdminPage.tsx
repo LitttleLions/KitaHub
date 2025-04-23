@@ -1,171 +1,424 @@
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+
+// Interface für die API-Antwort (angepasst an den neuen Endpunkt)
+interface StartKnowledgeImportResponse {
+    message: string;
+    processedPosts?: number;
+    upsertedPosts?: number;
+    dryRun: boolean;
+    preview?: { id: number; title: string }[];
+}
 
 const KnowledgeAdminPage: React.FC = () => {
+  // State für API-Vorschau
   const [previewData, setPreviewData] = useState<any[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [errorPreview, setErrorPreview] = useState<string | null>(null);
 
-  const [importStatus, setImportStatus] = useState<string | null>(null);
+  // State für den Import-Prozess
+  const [importStatus, setImportStatus] = useState<string>('Bereit');
   const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState<StartKnowledgeImportResponse | null>(null);
+  const [logMessages, setLogMessages] = useState<string[]>([]);
 
-  const [importPreview, setImportPreview] = useState<any[] | null>(null);
-  const [logMessages, setLogMessages] = useState<string[]>([]); // Neuer State für Logs
+  // Import-Parameter States
+  const [limit, setLimit] = useState(20);
+  const [page, setPage] = useState(1); // Startseite
+  const [totalPagesToFetch, setTotalPagesToFetch] = useState(1); // Anzahl Seiten
+  const [isDryRun, setIsDryRun] = useState(true); // Dry Run State for mass import
 
-  const [limit, setLimit] = useState(20); // Default Limit erhöht
-  // const [offset, setOffset] = useState(0); // Offset wird nicht mehr verwendet
+  // States for Specific Import by Search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<{id: number, title: string, slug: string, link: string}[]>([]);
+  const [selectedPosts, setSelectedPosts] = useState<number[]>([]); // Store selected post IDs
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [specificImportLoading, setSpecificImportLoading] = useState(false);
+  const [specificImportDryRun, setSpecificImportDryRun] = useState(true); // Separate dry run state
 
+  // --- API Vorschau Funktion ---
   const fetchPreview = async () => {
-    setLoading(true);
-    setError(null);
+    setLoadingPreview(true);
+    setErrorPreview(null);
     try {
-      // Korrigiere den Port auf 3000
-      const response = await fetch('http://localhost:3000/api/import/knowledge/preview'); 
+      const response = await fetch('http://localhost:3000/api/import/knowledge/preview');
       if (!response.ok) {
         throw new Error(`HTTP error ${response.status}`);
       }
       const data = await response.json();
       setPreviewData(data);
     } catch (err: any) {
-      setError(err.message || 'Fehler beim Laden der Vorschau');
+      setErrorPreview(err.message || 'Fehler beim Laden der Vorschau');
     } finally {
-      setLoading(false);
+      setLoadingPreview(false);
     }
   };
 
-  // Helper zum Loggen
+  // --- Helper zum Loggen ---
   const addLog = (message: string) => {
-    setLogMessages(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
+    setLogMessages(prev => [`[${new Date().toLocaleTimeString()}] ${message}`, ...prev].slice(0, 100)); // Keep last 100 logs
   };
 
-  const startImport = async (dryRun: boolean) => {
+  // --- Import Start Funktion ---
+  const startImport = async () => {
     setImportLoading(true);
-    setImportStatus(null);
-    setImportPreview(null);
-    setLogMessages([]); // Logs zurücksetzen
-    // Logge nur Limit
-    addLog(`Starte Import (Dry Run: ${dryRun}, Limit: ${limit})...`); 
-    try {
-      // Korrigiere den Port auf 3000
-      const response = await fetch('http://localhost:3000/api/import/knowledge/start', { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // Sende nur limit und dryRun im Body
-        body: JSON.stringify({ limit, dryRun }), 
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
-      }
-      const data = await response.json();
-      // Verwende nur noch dryRun in der Statusmeldung (Offset kommt vom Backend, falls relevant)
-      let statusMsg = data.message || `Import abgeschlossen (Dry Run: ${dryRun})`; 
-      if (typeof data.count === 'number') {
-        // Die Backend-Nachricht enthält bereits die Details, wir können sie direkt verwenden
-        // oder die Anzahl hier hinzufügen, falls die Backend-Nachricht generisch ist.
-        // Nehmen wir an, die Backend-Nachricht ist spezifisch genug.
-        // statusMsg += ` - Verarbeitete Beiträge: ${data.count}`; 
-        addLog(`Backend meldet: ${data.count} Beiträge verarbeitet.`);
-      } else {
-         addLog(`Backend meldet: Import abgeschlossen.`);
-      }
-      setImportStatus(statusMsg);
+    setImportStatus('Starte Wissensimport...');
+    setImportResult(null);
+    setLogMessages([]); // Reset logs
+    addLog(`Frontend: Starte Wissensimport (Dry Run: ${isDryRun}) - Seite: ${page}, Limit: ${limit}, Seiten gesamt: ${totalPagesToFetch}`);
 
-      if (dryRun && data.preview && Array.isArray(data.preview)) {
-        setImportPreview(data.preview);
-        if (data.preview.length > 0) {
-          addLog(`Vorschau geladen (${data.preview.length} Beiträge):`);
-          data.preview.forEach((post: any) => {
-            addLog(`  - ID: ${post.id}, Titel: ${post.title}`);
-          });
-        } else {
-          addLog("Keine Beiträge in der Vorschau gefunden für diese Seite.");
+    try {
+        const response = await fetch('http://localhost:3000/api/import/knowledge', { // Use new endpoint
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                limit: limit,
+                page: page,
+                totalPagesToFetch: totalPagesToFetch,
+                dryRun: isDryRun,
+            }),
+        });
+
+        const data: StartKnowledgeImportResponse = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || `API Fehler (${response.status})`);
         }
-      } else if (!dryRun && typeof data.count === 'number' && data.count > 0) {
-          addLog(`Import erfolgreich in Datenbank geschrieben.`);
-      } else if (!dryRun) {
-          addLog("Keine neuen Beiträge importiert oder Fehler im Backend.");
-      }
-    } catch (err: any) {
-      setImportStatus('Fehler: ' + (err.message || 'Unbekannter Fehler'));
-      addLog(`Fehler: ${err.message || 'Unbekannter Fehler'}`);
+
+        setImportStatus(data.message);
+        setImportResult(data);
+        addLog(`Frontend: Wissensimport abgeschlossen. ${data.message}`);
+
+        if (data.preview && data.preview.length > 0) {
+            addLog(`Vorschau (Dry Run - erste ${data.preview.length} Posts):`);
+            data.preview.forEach(p => addLog(`  - ID: ${p.id}, Titel: ${p.title}`));
+        } else if (isDryRun) {
+             addLog("Keine Posts in der Vorschau (Dry Run).");
+        }
+
+        if (!isDryRun && data.upsertedPosts !== undefined) {
+             addLog(`Erfolgreich ${data.upsertedPosts} Posts in die Datenbank geschrieben/aktualisiert.`);
+        }
+
+    } catch (error) {
+        console.error('Error starting knowledge import:', error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        setImportStatus(`Fehler: ${errorMsg}`);
+        addLog(`ERROR starting knowledge import: ${errorMsg}`);
     } finally {
-      setImportLoading(false);
-      addLog("Importvorgang beendet.");
+        setImportLoading(false);
+        addLog("Importvorgang beendet.");
+    }
+    // Removed duplicate finally block here
+  };
+
+  // --- Handler Functions for Specific Import ---
+
+  const handleSearch = async () => {
+    setSearchLoading(true);
+    setSearchError(null);
+    setSearchResults([]);
+    setSelectedPosts([]); // Clear selection on new search
+    addLog(`Frontend: Starte Suche nach "${searchTerm}"...`);
+
+    try {
+        const response = await fetch(`http://localhost:3000/api/import/knowledge/search?term=${encodeURIComponent(searchTerm)}`);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: `HTTP error ${response.status}` }));
+            throw new Error(errorData.message || `HTTP error ${response.status}`);
+        }
+        const data = await response.json();
+        setSearchResults(data);
+        addLog(`Frontend: Suche erfolgreich. ${data.length} Ergebnisse gefunden.`);
+    } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error('Error searching knowledge posts:', error);
+        setSearchError(errorMsg);
+        addLog(`ERROR searching knowledge posts: ${errorMsg}`);
+    } finally {
+        setSearchLoading(false);
     }
   };
+
+  const handleCheckboxChange = (postId: number, isChecked: boolean) => {
+    setSelectedPosts(prev =>
+        isChecked ? [...prev, postId] : prev.filter(id => id !== postId)
+    );
+  };
+
+  const handleSpecificImport = async () => {
+    if (selectedPosts.length === 0) return;
+
+    setSpecificImportLoading(true);
+    // Use the main import status/log for feedback
+    setImportStatus(`Starte spezifischen Import für ${selectedPosts.length} Posts...`);
+    setImportResult(null);
+    // Optionally clear main logs or add a separator
+    addLog("--- Starting Specific Import ---");
+    addLog(`Frontend: Starte spezifischen Import (Dry Run: ${specificImportDryRun}) für IDs: ${selectedPosts.join(', ')}`);
+
+    try {
+        const response = await fetch('http://localhost:3000/api/import/knowledge/specific', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                postIds: selectedPosts,
+                dryRun: specificImportDryRun,
+            }),
+        });
+
+        // Specific import endpoint responds with 202 and jobId immediately
+        const data = await response.json();
+
+        if (!response.ok) {
+             // Try to get more specific error message from response body if possible
+            throw new Error(data.message || `API Fehler (${response.status})`);
+        }
+
+        setImportStatus(data.message + ` (Job ID: ${data.jobId})`); // Update status with Job ID
+        addLog(`Frontend: Spezifischer Import gestartet. Job ID: ${data.jobId}. Status prüfen (falls implementiert) unter: ${data.statusUrl}`);
+        // Reset search/selection after starting import? Optional.
+        // setSearchResults([]);
+        // setSelectedPosts([]);
+
+    } catch (error) {
+        console.error('Error starting specific knowledge import:', error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        setImportStatus(`Fehler beim Starten des spezifischen Imports: ${errorMsg}`);
+        addLog(`ERROR starting specific knowledge import: ${errorMsg}`);
+    } finally {
+        setSpecificImportLoading(false);
+         addLog("Spezifischer Importvorgang (Start) beendet.");
+    }
+  };
+
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Wissen Import & Vorschau</h1>
-      <button
-        onClick={fetchPreview}
-        className="px-4 py-2 bg-kita-orange text-white rounded hover:bg-kita-orange/90 mb-4"
-      >
-        Wissen-API Vorschau laden
-      </button>
+    <div className="container mx-auto p-4 md:p-6 lg:p-8 space-y-6">
+      <h1 className="text-3xl font-bold">Wissen Import & Vorschau</h1>
 
-      <div className="flex gap-4 mb-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Anzahl Posts (Limit):</label>
-          <input
-            type="number"
-            value={limit}
-            min={1}
-            max={100} // Max per_page laut WP API Doku
-            onChange={(e) => setLimit(Number(e.target.value))}
-            className="border px-2 py-1 rounded w-24"
-          />
-        </div>
-        {/* Offset-Feld entfernt */}
-      </div>
+      {/* Import Configuration Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Import Konfiguration (WordPress)</CardTitle>
+          <CardDescription>
+            Konfiguriere und starte den Import von Wissensbeiträgen von kita.de/wissen.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="knowledgePage">Startseite</Label>
+              <Input
+                id="knowledgePage"
+                type="number"
+                value={page}
+                onChange={(e) => setPage(parseInt(e.target.value, 10) || 1)}
+                min="1"
+                disabled={importLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="knowledgeLimit">Posts pro Seite</Label>
+              <Input
+                id="knowledgeLimit"
+                type="number"
+                value={limit}
+                onChange={(e) => setLimit(parseInt(e.target.value, 10) || 1)}
+                min="1"
+                max="100" // WP API limit
+                disabled={importLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="knowledgeTotalPages">Seiten gesamt</Label>
+              <Input
+                id="knowledgeTotalPages"
+                type="number"
+                value={totalPagesToFetch}
+                onChange={(e) => setTotalPagesToFetch(parseInt(e.target.value, 10) || 1)}
+                min="1"
+                disabled={importLoading}
+              />
+            </div>
+          </div>
+          <div className="flex items-center space-x-2 pt-2">
+            <Checkbox
+              id="knowledgeDryRun"
+              checked={isDryRun}
+              onCheckedChange={(checked) => setIsDryRun(Boolean(checked))}
+              disabled={importLoading}
+            />
+            <Label htmlFor="knowledgeDryRun" className="font-normal">
+              Testlauf (Dry Run) - Beiträge nur lesen, nicht speichern
+            </Label>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button
+            onClick={startImport}
+            disabled={importLoading || limit <= 0 || page <= 0 || totalPagesToFetch <= 0}
+          >
+            {importLoading ? 'Importiere...' : 'Wissensimport starten'}
+          </Button>
+        </CardFooter>
+      </Card>
 
-      <button
-        onClick={() => startImport(true)}
-        disabled={importLoading}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mb-4 mr-2 disabled:opacity-50"
-      >
-        {importLoading ? 'Test-Import läuft...' : 'Test-Import (nur lesen)'}
-      </button>
+      {/* Import Status & Results Card */}
+      <Card>
+        <CardHeader>
+            <CardTitle>Import Status & Ergebnis</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div>
+                <Label>Status</Label>
+                <p className="text-sm font-medium">{importStatus}</p>
+            </div>
+            {importResult && (
+                <div>
+                    <Label>Ergebnis Details</Label>
+                    <Textarea
+                        readOnly
+                        value={JSON.stringify(importResult, null, 2)}
+                        className="mt-1 h-32 font-mono text-xs"
+                        placeholder="Details des letzten Imports..."
+                    />
+                </div>
+            )}
+             {/* Log-Bereich */}
+            {logMessages.length > 0 && (
+                <div>
+                    <Label htmlFor="importLogs">Import Log</Label>
+                    <Textarea
+                        id="importLogs"
+                        readOnly
+                        value={logMessages.join('\n')}
+                        className="mt-1 h-64 font-mono text-xs bg-black text-green-400"
+                        placeholder="Logs werden hier angezeigt..."
+                    />
+                </div>
+            )}
+        </CardContent>
+      </Card>
 
-      <button
-        onClick={() => startImport(false)}
-        disabled={importLoading}
-        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 mb-4 disabled:opacity-50"
-      >
-        {importLoading ? 'Import läuft...' : 'Import starten (schreiben)'}
-      </button>
+      {/* API Preview Card */}
+      <Card>
+        <CardHeader>
+            <CardTitle>API Rohdaten-Vorschau</CardTitle>
+            <CardDescription>Zeigt die ersten 5 Posts direkt von der WordPress API.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            {loadingPreview && <p>Lade Vorschau...</p>}
+            {errorPreview && <p className="text-red-500">Fehler: {errorPreview}</p>}
+            {previewData && (
+                <Textarea
+                    readOnly
+                    value={JSON.stringify(previewData, null, 2)}
+                    className="mt-1 h-96 font-mono text-xs"
+                />
+            )}
+        </CardContent>
+        <CardFooter>
+            <Button
+                onClick={fetchPreview}
+                disabled={loadingPreview}
+                variant="outline"
+            >
+                {loadingPreview ? 'Lade...' : 'API Vorschau laden'}
+            </Button>
+        </CardFooter>
+      </Card>
 
-      {loading && <p>Lade Vorschau...</p>}
-      {error && <p className="text-red-500">Fehler: {error}</p>}
-      {importStatus && <p className="mt-2">{importStatus}</p>}
+      {/* Specific Import Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Gezielter Import nach Stichwort</CardTitle>
+          <CardDescription>
+            Suche nach Beiträgen auf kita.de/wissen und importiere ausgewählte Posts.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Search Input */}
+          <div className="flex space-x-2">
+            <div className="flex-grow space-y-1">
+              <Label htmlFor="searchTerm">Suchbegriff</Label>
+              <Input
+                id="searchTerm"
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="z.B. Schwangerschaft, Eingewöhnung..."
+                disabled={searchLoading || specificImportLoading}
+              />
+               <p className="text-xs text-gray-500 pt-1">Für exakte Titelsuche: Begriff in Anführungszeichen setzen (z.B. "Eltern").</p>
+            </div>
+            <Button onClick={handleSearch} disabled={searchLoading || !searchTerm.trim()} className="self-end">
+              {searchLoading ? 'Suche...' : 'Suchen'}
+            </Button>
+          </div>
 
-      {importPreview && (
-        <div className="mb-4">
-          <h2 className="font-semibold mb-2">Import-Vorschau (Dry Run)</h2>
-          <pre className="bg-gray-100 p-4 rounded overflow-auto max-h-[600px] text-xs">
-            {JSON.stringify(importPreview, null, 2)}
-          </pre>
-        </div>
-      )}
+          {/* Search Results */}
+          {searchError && <p className="text-red-500 text-sm">Fehler bei der Suche: {searchError}</p>}
+          {searchResults.length > 0 && (
+            <div className="border rounded-md p-4 max-h-60 overflow-y-auto space-y-2">
+              <Label>Suchergebnisse:</Label>
+              {searchResults.map((post) => (
+                <div key={post.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`select-post-${post.id}`}
+                    checked={selectedPosts.includes(post.id)}
+                    onCheckedChange={(checked) => handleCheckboxChange(post.id, Boolean(checked))}
+                  />
+                  <Label htmlFor={`select-post-${post.id}`} className="font-normal text-sm flex-grow">
+                    {post.title} (ID: {post.id}, Slug: {post.slug})
+                  </Label>
+                   <a href={post.link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">Link</a>
+                </div>
+              ))}
+            </div>
+          )}
+           {searchResults.length === 0 && !searchLoading && searchTerm && !searchError && (
+             <p className="text-sm text-gray-500">Keine Ergebnisse für "{searchTerm}" gefunden.</p>
+           )}
 
-      {/* Log-Bereich */}
-      {logMessages.length > 0 && (
-         <div className="mt-6">
-           <h2 className="font-semibold mb-2">Import Log</h2>
-           <pre className="bg-black text-green-400 p-4 rounded overflow-auto max-h-[300px] text-xs font-mono">
-             {logMessages.join('\n')}
-           </pre>
-         </div>
-       )}
+          {/* Specific Import Options */}
+          {selectedPosts.length > 0 && (
+             <div className="flex items-center space-x-2 pt-2">
+                <Checkbox
+                  id="specificDryRun"
+                  checked={specificImportDryRun}
+                  onCheckedChange={(checked) => setSpecificImportDryRun(Boolean(checked))}
+                  disabled={specificImportLoading}
+                />
+                <Label htmlFor="specificDryRun" className="font-normal">
+                  Testlauf (Dry Run) für ausgewählte Posts
+                </Label>
+              </div>
+          )}
 
-      {/* API Vorschau (wird seltener gebraucht, daher ans Ende) */}
-      {previewData && (
-         <div className="mt-6">
-           <h2 className="font-semibold mb-2">API Rohdaten-Vorschau</h2>
-           <pre className="bg-gray-100 p-4 rounded overflow-auto max-h-[600px]">
-             {JSON.stringify(previewData, null, 2)}
-           </pre>
-         </div>
-       )}
+        </CardContent>
+         {selectedPosts.length > 0 && (
+            <CardFooter>
+              <Button
+                onClick={handleSpecificImport}
+                disabled={specificImportLoading || selectedPosts.length === 0}
+              >
+                {specificImportLoading ? 'Importiere Auswahl...' : `Importiere ${selectedPosts.length} ausgewählte Posts`}
+              </Button>
+            </CardFooter>
+         )}
+      </Card>
+
     </div>
   );
 };

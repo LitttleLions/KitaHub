@@ -68,12 +68,20 @@ function randomDelay(min = 1000, max = 2500): number {
  * Hauptfunktion für den Importprozess.
  * Gibt ein Promise<void> zurück.
  */
+// TODO: The 'bezirke' and 'kitaLimitPerBezirk' parameters seem redundant if a full config is passed.
+//       Consider refactoring to only use the config object.
 async function runImportProcess(
     jobId: string,
     dryRun: boolean,
-    bezirke: { name: string, url: string }[],
-    kitaLimitPerBezirk: number
+    bezirke: { name: string, url: string }[], // Keep for now, but potentially remove later
+    kitaLimitPerBezirk: number, // Keep for now, but potentially remove later
+    config?: ScrapingConfig // Add optional config parameter
 ): Promise<void> {
+    // Use provided config or default from importConfig.js
+    const effectiveConfig = config || importConfig;
+    // Use limit from config if available, otherwise use the passed parameter
+    const effectiveKitaLimit = effectiveConfig.maxKitasPerBezirk ?? kitaLimitPerBezirk;
+
     console.log(`[${jobId}] --- runImportProcess CALLED ---`);
     console.log(`[${jobId}] --- runImportProcess ENTERED ---`);
     console.log(`[${jobId}] DEBUG: Import gestartet für ${bezirke.length} Bezirke, Limit ${kitaLimitPerBezirk}, DryRun: ${dryRun}`);

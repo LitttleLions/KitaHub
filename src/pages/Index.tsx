@@ -13,14 +13,16 @@ import { fetchFeaturedKitas, fetchRandomKitas } from '../services/kitaService';
 import { fetchFeaturedJobs } from '../services/jobService';
 import { supabase } from '@/integrations/supabase/client'; // Korrekter Importpfad
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
-import { Company } from '@/types/company'; // Import Company type
+import { Company } from '@/types/company'; // Re-add Company import for featuredKitas
 import { Job } from '@/types/job'; // Import Job type
+import BundeslanderNavigation from '@/components/kitas/BundeslanderNavigation'; // Import BundeslanderNavigation
+import HorizontalKitaCard from '@/components/kitas/HorizontalKitaCard'; // Import HorizontalKitaCard again
+// Removed KitaListItem import
 
 const Index = () => {
-  // Use any[] for randomKitas state to avoid complex type issues for now
-  const [randomKitas, setRandomKitas] = useState<any[]>([]);
+  const [randomKitas, setRandomKitas] = useState<any[]>([]); // State type remains any[]
   // Remove explicit type from useQuery, let it infer. Default to empty array.
-  const { data: featuredKitas = [] } = useQuery({ queryKey: ['featuredKitas'], queryFn: fetchFeaturedKitas });
+  const { data: featuredKitas = [] } = useQuery({ queryKey: ['featuredKitas'], queryFn: fetchFeaturedKitas }); // Keep featuredKitas as inferred
   // Wrap fetchFeaturedJobs in an anonymous function to fix type error
   const { data: featuredJobs = [] } = useQuery<Job[]>({ queryKey: ['featuredJobs'], queryFn: () => fetchFeaturedJobs() });
   const [randomKnowledge, setRandomKnowledge] = useState<any[]>([]); // Use any[] for now
@@ -33,7 +35,7 @@ const Index = () => {
 
   useEffect(() => {
     async function loadRandomKitas() {
-      const kitas = await fetchRandomKitas(4);
+      const kitas = await fetchRandomKitas(12); // Fetch 12 random kitas for the grid
       setRandomKitas(kitas); // Set directly, state is now any[]
     }
     loadRandomKitas();
@@ -65,8 +67,9 @@ const Index = () => {
   return (
     <>
       <Navbar /> {/* Wiederhergestellt */}
-      {/* Hero Section - Removed container and padding from main for full width */}
-      <section className="mb-12 bg-gradient-to-r from-blue-50 via-white to-green-50 text-center"> {/* Removed py-12 */}
+      {/* Hero Section - Apply new gradient and padding */}
+      {/* Adjusted gradient to match image (light sky blue to light violet) */}
+      <section className="mb-12 bg-gradient-to-b from-sky-50 to-violet-50 text-center py-16 md:py-20"> {/* Adjusted gradient */}
          <KitaSearchHero
               searchText={searchText}
               setSearchText={setSearchText}
@@ -91,8 +94,6 @@ const Index = () => {
        </section>
 
       <main className="container mx-auto px-4 md:px-6 py-8"> {/* Re-add container for the rest */}
-         {/* Features Section */}
-         <Features />
 
          {/* Recommended Kitas */}
          <section className="mb-8">
@@ -108,11 +109,11 @@ const Index = () => {
         {/* Mini Kita List */}
         <section className="mb-8">
           <h3 className="text-lg font-semibold mb-4">Weitere Kitas entdecken</h3>
-          {/* Adjusted grid for smaller appearance */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-             {/* Use type assertion 'as Company' */}
-            {randomKitas.map((kita, idx) => (
-              <FeaturedKitaCard key={kita.id} kita={kita as Company} index={idx} />
+          {/* Using adjusted HorizontalKitaCard in a 3-column grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"> 
+             {/* Remove type assertion as randomKitas is any[] and HorizontalKitaCard likely accepts partial data */}
+            {randomKitas.map((kita) => (
+              <HorizontalKitaCard key={kita.id} kita={kita} />
             ))}
           </div>
           <div className="mt-4 text-center">
@@ -156,7 +157,8 @@ const Index = () => {
                 }
 
                 return (
-                  <article key={knowledge.id} className="border rounded-lg overflow-hidden shadow-sm bg-white flex flex-col">
+                  // Applied consistent card styling
+                  <article key={knowledge.id} className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg overflow-hidden transition-shadow duration-200 flex flex-col">
                     {imageUrl && (
                       <Link to={linkPath}>
                         <img
@@ -194,6 +196,10 @@ const Index = () => {
             </Link>
            </div>
          </section>
+         {/* Bundeslander Navigation Section - Added here */}
+         <BundeslanderNavigation />
+         {/* Features Section - Moved here */}
+         <Features />
        </main>
        {/* Stats Section before Footer */}
        <Stats />

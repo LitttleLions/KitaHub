@@ -89,16 +89,18 @@ const KinderweltKatalogPage: React.FC = () => {
         {/* Hero-Bereich */}
         <KinderweltHero />
 
-      {/* Überschrift für Katalog - Mehr Abstand nach oben */}
-      <h2 className="mt-16 mb-8 text-2xl font-semibold tracking-tight"> {/* mt und mb erhöht */}
-        Entdecke unsere Geschichten
-      </h2>
+        {/* Main content wrapper with white background, padding, shadow */}
+        <div className="bg-white p-6 md:p-8 rounded-lg shadow-md mt-12"> {/* Added wrapper */}
+          {/* Überschrift für Katalog */}
+          <h2 className="mb-8 text-2xl font-semibold tracking-tight border-b pb-4"> {/* Added border-bottom */}
+            Entdecke unsere Geschichten
+          </h2>
 
-      {/* Filterbereich - mit Card-Styling - Mehr Abstand nach unten */}
-      <div className="grid grid-cols-1 gap-6 mb-16 md:grid-cols-4 bg-white p-6 rounded-lg border border-gray-200 shadow-sm"> {/* mb erhöht */}
-         {/* Suchfeld */}
-         <div className="md:col-span-4">
-             <Label htmlFor="search">Suche nach Titel oder Thema</Label>
+          {/* Filterbereich - Removed background/shadow/border, now handled by parent */}
+          <div className="grid grid-cols-1 gap-6 mb-12 md:grid-cols-4"> {/* Adjusted mb */}
+            {/* Suchfeld */}
+            <div className="md:col-span-4">
+              <Label htmlFor="search">Suche nach Titel oder Thema</Label>
              <Input
                id="search"
                placeholder="z.B. Abenteuer, Fuchs..."
@@ -161,11 +163,11 @@ const KinderweltKatalogPage: React.FC = () => {
                  ))}
                </SelectContent>
              </Select>
-         </div>
-      </div>
+            </div>
+          </div>
 
-      {/* Anzeige der Geschichten */}
-      {/* Hinweis: Die Client-seitige Filterung nach searchTerm bleibt erhalten. */}
+          {/* Anzeige der Geschichten */}
+          {/* Hinweis: Die Client-seitige Filterung nach searchTerm bleibt erhalten. */}
       {/* Die Filterung nach Thema, Alter, Lesezeit erfolgt jetzt primär durch die API via useQuery */}
       {isLoadingCatalog && (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -214,8 +216,9 @@ const KinderweltKatalogPage: React.FC = () => {
         </h2>
         <StoryGeneratorForm onSubmit={handleGenerateSubmit} isLoading={isGenerating} />
       </div>
-      </div>
-      <Footer />
+      </div> {/* Closing main content wrapper */}
+    </div> {/* Closing container */}
+    <Footer />
     </>
   );
 };

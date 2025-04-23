@@ -4,15 +4,20 @@ import { supabase } from '@/integrations/supabase/client'; // Korrigierter Impor
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import KnowledgeSidebar from '@/components/knowledge/KnowledgeSidebar'; // Importiere Sidebar
+import { decodeHtmlEntities } from '@/utils/dataFormatUtils'; // Import the decoder function
 
 interface Post {
   id: string; // Geändert zu string
   title: string;
   full_path: string | null;
   excerpt_rendered: string;
-  // Passe den Typ an das an, was die DB wahrscheinlich zurückgibt (Array von Strings oder komplexeres JSON?)
-  // Vorerst als any[], um den Fehler zu beheben, muss ggf. genauer typisiert werden, wenn die Struktur klar ist.
-  category_terms?: any[] | null; 
+  // Definiere den Typ für category_terms genauer
+  category_terms?: { 
+    id?: number; // Mache ID optional, falls nicht immer vorhanden
+    name: string; 
+    slug: string; 
+    // Füge ggf. weitere erwartete Felder hinzu
+  }[] | null; 
   featured_media_url?: string | null; // Hinzugefügt für das Bild
 }
 
@@ -54,14 +59,28 @@ const KnowledgeCategoryPage: React.FC = () => {
         }
 
         if (data && data.length > 0) {
-          setPosts(data);
-          // Vereinfachte Logik: Verwende den Slug als Namen, da die Struktur von category_terms unklar ist
-          // TODO: Wenn die Struktur von category_terms klar ist (z.B. Array von Objekten),
-          // kann die Logik zum Extrahieren des Namens wiederhergestellt werden.
-          setCategoryName(categorySlug); 
+          // Type assertion to tell TypeScript we expect the data to match Post[]
+          setPosts(data as Post[]); 
+          // Versuche, den Kategorienamen aus dem ersten Post zu extrahieren
+          let foundName: string | null = null;
+          const firstPost = data[0];
+          // Greife typsicher auf category_terms zu
+          // Greife typsicher auf category_terms zu (using the asserted type)
+          const typedFirstPost = data[0] as Post; // Assert type for easier access
+          if (typedFirstPost && Array.isArray(typedFirstPost.category_terms)) { 
+            const matchingTerm = typedFirstPost.category_terms.find(
+              // Check if term is an object and has the correct slug property
+              (term) => term && typeof term === 'object' && term.slug === categorySlug 
+            );
+            // Check if matchingTerm is found and has a name property of type string
+            if (matchingTerm && typeof matchingTerm.name === 'string') { 
+              foundName = matchingTerm.name;
+            }
+          }
+          setCategoryName(foundName || categorySlug); // Fallback auf Slug, wenn Name nicht gefunden
         } else {
-          setPosts([]);
-          setCategoryName(categorySlug); 
+          setPosts([]); // Set empty array of the correct type
+          setCategoryName(categorySlug); // Fallback auf Slug, wenn keine Posts gefunden
           // setError('Keine Beiträge in dieser Kategorie gefunden.'); // Setze keinen harten Fehler, nur Info
         }
       } catch (err: any) {
@@ -85,7 +104,8 @@ const KnowledgeCategoryPage: React.FC = () => {
        <div className="bg-gradient-to-r from-kita-blue to-kita-orange text-white py-10 mb-8 text-center">
          <div className="container mx-auto px-4">
             <h1 className="text-4xl font-bold">
-              Kategorie: {categoryName || categorySlug}
+              {/* Zeige nur den Namen oder Slug an, ohne Präfix */}
+              {categoryName || 'Kategorie wird geladen...'} 
             </h1>
             {/* Optional: Beschreibung der Kategorie hier einfügen, falls verfügbar */}
          </div>
@@ -112,37 +132,39 @@ const KnowledgeCategoryPage: React.FC = () => {
         {posts.length > 0 && (
            <div className="space-y-6">
              {posts.map((post) => (
-               // Verwende das gleiche Artikel-Layout wie auf der Übersichtsseite
-               <article key={post.id} className="flex flex-col md:flex-row gap-4 border-b pb-6">
+               // Apply compact styling similar to OverviewPage
+               <article key={post.id} className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md overflow-hidden transition-shadow duration-200 flex flex-col md:flex-row gap-3"> {/* Reduced gap, added card styles */}
                  {post.featured_media_url && (
-                   <div className="md:w-1/4 flex-shrink-0">
+                   // Smaller image container
+                   <div className="md:w-1/4 flex-shrink-0 aspect-video md:aspect-[4/3] overflow-hidden"> {/* Adjusted width and aspect ratio */}
                      <Link to={`/wissen${post.full_path}`}>
                        <img 
                          src={post.featured_media_url} 
-                         alt={post.title} 
-                         className="w-full h-32 object-cover rounded-md shadow-sm" 
+                         alt={decodeHtmlEntities(post.title)} // Decode alt text
+                         className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
                        />
                      </Link>
                    </div>
                  )}
-                 <div className={post.featured_media_url ? "md:w-3/4" : "w-full"}>
-                   <h2 className="text-xl font-semibold mb-1">
-                     {post.full_path ? (
-                       <Link to={`/wissen${post.full_path}`} className="text-kita-blue hover:text-kita-orange">
-                         {post.title}
-                       </Link>
-                     ) : (
-                       <span className="text-gray-700">{post.title} (Kein Pfad)</span>
-                     )}
-                   </h2>
+                  {/* Adjusted padding and width */}
+                 <div className={`p-3 flex flex-col ${post.featured_media_url ? "md:w-3/4" : "w-full"}`}> {/* Reduced padding */}
+                    <h2 className="text-base font-semibold mb-1"> {/* Reduced text size */}
+                      {post.full_path ? (
+                        <Link to={`/wissen${post.full_path}`} className="text-kita-blue hover:text-kita-orange">
+                          {decodeHtmlEntities(post.title)}
+                        </Link>
+                      ) : (
+                        <span className="text-gray-700">{decodeHtmlEntities(post.title)} (Kein Pfad)</span>
+                      )}
+                    </h2>
                    {post.excerpt_rendered && (
-                     <div 
-                       className="text-gray-600 text-sm mb-2 prose prose-sm max-w-none" 
+                     <div
+                       className="text-gray-600 text-xs mb-1 prose prose-xs max-w-none line-clamp-2" /* Reduced text size, margin, added line-clamp */
                        dangerouslySetInnerHTML={{ __html: post.excerpt_rendered.replace(/<a class="moretag".*<\/a>/, '') }} // Entferne Weiterlesen-Link
                      />
                    )}
                     {post.full_path && ( // Zeige Weiterlesen nur wenn Pfad existiert
-                      <Link to={`/wissen${post.full_path}`} className="text-sm text-kita-orange hover:underline font-medium">
+                      <Link to={`/wissen${post.full_path}`} className="text-xs text-kita-orange hover:underline font-medium mt-auto self-start"> {/* Reduced text size, added margin-top auto */}
                          Weiterlesen
                        </Link>
                     )}

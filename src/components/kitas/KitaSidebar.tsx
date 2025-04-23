@@ -35,9 +35,14 @@ const KitaSidebar: React.FC<KitaSidebarProps> = ({
 
   // Effekt zum Laden der Bezirke, wenn sich das Bundesland ändert
   useEffect(() => {
-    if (bundesland && bundesland !== 'all') {
+    // Find the corresponding state object to get the dbValue
+    const selectedStateData = GERMAN_STATES.find(s => s.value === bundesland);
+    const bundeslandDbVal = selectedStateData ? selectedStateData.dbValue : null;
+
+    if (bundeslandDbVal && bundesland !== 'all') { // Use bundeslandDbVal here
       setLoadingBezirke(true);
-      fetchBezirkeByBundesland(bundesland)
+      // Pass the dbValue to the fetch function
+      fetchBezirkeByBundesland(bundeslandDbVal) 
         .then(data => {
           setBezirke(data || []);
           // Reset Bezirk selection if the new list doesn't include the current selection

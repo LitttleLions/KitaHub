@@ -3,8 +3,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Star, Award } from 'lucide-react';
 import { Card } from "@/components/ui/card";
-// Keep getPlaceholderImage for CompanyAvatar fallback
-import { getPlaceholderImage } from "@/utils/dataFormatUtils"; 
+// Import the new helper function and keep getPlaceholderImage for avatar
+import { getDisplayCoverImageUrl, getPlaceholderImage } from "@/utils/dataFormatUtils"; 
 import { Company } from '@/types/company';
 import CompanyAvatar from "@/components/ui/company-avatar";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -48,20 +48,13 @@ const FeaturedKitaCard: React.FC<FeaturedKitaCardProps> = ({ kita, index }) => {
       <Link to={`/kita/${kita.id}`} className="block">
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-70 z-10"></div>
         <div className="relative h-72">
-          {kita.cover_image_url ? (
-            <img 
-              src={kita.cover_image_url}
-              alt={kita.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              onError={handleImageError}
-            />
-          ) : (
-            <img
-              src={PLACEHOLDER_IMAGE_URL} // Use standard placeholder
-              alt={kita.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          )}
+          {/* Use the new helper function to determine the image source */}
+          <img 
+            src={getDisplayCoverImageUrl(kita)} 
+            alt={kita.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={handleImageError} // Keep onError pointing to the final fallback
+          />
           
           {isPremium && (
             <div className="absolute top-3 right-3 z-20">

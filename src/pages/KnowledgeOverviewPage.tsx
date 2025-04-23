@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client'; // Korrigierter Impor
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import KnowledgeSidebar from '@/components/knowledge/KnowledgeSidebar'; // Importiere Sidebar
+import { decodeHtmlEntities } from '@/utils/dataFormatUtils'; // Import the decoder function
 
 // Interface für einen einzelnen Post (vereinfacht für die Übersicht)
 interface OverviewPost {
@@ -105,11 +106,11 @@ const KnowledgeOverviewPage: React.FC = () => {
       {/* Hauptcontainer mit 2 Spalten Layout */}
       <main className="container mx-auto max-w-6xl px-4 pb-8 flex flex-col lg:flex-row gap-8">
         
-        {/* Linke Spalte: Hauptinhalt */}
-        <div className="w-full lg:w-3/4 space-y-8">
-          
-          {/* Featured Posts Section */}
-          <section>
+        {/* Linke Spalte: Hauptinhalt - Wrapped in white container */}
+        <div className="w-full lg:w-3/4">
+          <div className="bg-white p-6 md:p-8 rounded-lg shadow-md space-y-8">
+            {/* Featured Posts Section */}
+            <section>
             <h2 className="text-2xl font-semibold mb-4 border-b pb-2">
               Aktuelle Highlights
             </h2>
@@ -131,7 +132,7 @@ const KnowledgeOverviewPage: React.FC = () => {
                      <div className="p-4 flex flex-col flex-grow">
                        <h3 className="text-md font-semibold mb-2 flex-grow"> {/* Titel nimmt verfügbaren Platz */}
                          <Link to={`/wissen${post.full_path}`} className="text-kita-blue hover:text-kita-orange">
-                           {post.title}
+                           {decodeHtmlEntities(post.title)} {/* Decode title */}
                          </Link>
                        </h3>
                        {/* Optional: Kurzer Auszug
@@ -165,32 +166,35 @@ const KnowledgeOverviewPage: React.FC = () => {
             ) : latestPosts.length > 0 ? (
               <> {/* Fragment für mehrere Elemente */}
                 <div className="space-y-6">
-                  {latestPosts.map((post) => ( // Korrekte Map-Funktion hier
-                    <article key={post.id} className="flex flex-col md:flex-row gap-4 border-b pb-6">
+                  {latestPosts.map((post) => ( 
+                    // Make list items more compact
+                    <article key={post.id} className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md overflow-hidden transition-shadow duration-200 flex flex-col md:flex-row gap-3"> {/* Reduced gap */}
                       {post.featured_media_url && (
-                        <div className="md:w-1/4 flex-shrink-0">
-                          <Link to={`/wissen${post.full_path}`}>
-                            <img 
-                              src={post.featured_media_url} 
-                              alt={post.title} 
-                              className="w-full h-32 object-cover rounded-md shadow-sm" 
+                        // Smaller image container
+                        <div className="md:w-1/4 flex-shrink-0 aspect-video md:aspect-[4/3] overflow-hidden"> {/* Adjusted width and aspect ratio */}
+                          <Link to={`/wissen${post.full_path}`} className="block h-full">
+                            <img
+                              src={post.featured_media_url}
+                              alt={decodeHtmlEntities(post.title)} // Decode alt text too
+                              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
                             />
                           </Link>
                         </div>
                       )}
-                      <div className={post.featured_media_url ? "md:w-3/4" : "w-full"}>
-                        <h3 className="text-xl font-semibold mb-1">
+                      {/* Adjusted padding and width */}
+                      <div className={`p-3 flex flex-col ${post.featured_media_url ? "md:w-3/4" : "w-full"}`}> {/* Reduced padding */}
+                        <h3 className="text-base font-semibold mb-1"> {/* Reduced text size */}
                           <Link to={`/wissen${post.full_path}`} className="text-kita-blue hover:text-kita-orange">
-                            {post.title}
+                            {decodeHtmlEntities(post.title)} {/* Decode title */}
                           </Link>
                         </h3>
                         {post.excerpt_rendered && (
                           <div 
-                            className="text-gray-600 text-sm mb-2 prose prose-sm max-w-none" 
+                            className="text-gray-600 text-xs mb-1 prose prose-xs max-w-none line-clamp-2" /* Reduced text size, margin, added line-clamp */
                             dangerouslySetInnerHTML={{ __html: post.excerpt_rendered.replace(/<a class="moretag".*<\/a>/, '') }} // Entferne Weiterlesen-Link
                           />
                         )}
-                         <Link to={`/wissen${post.full_path}`} className="text-sm text-kita-orange hover:underline font-medium">
+                         <Link to={`/wissen${post.full_path}`} className="text-xs text-kita-orange hover:underline font-medium mt-auto self-start"> {/* Reduced text size, added margin-top auto */}
                             Weiterlesen
                           </Link>
                       </div>
@@ -224,8 +228,8 @@ const KnowledgeOverviewPage: React.FC = () => {
             ) : (
               <p>Keine Beiträge gefunden.</p> // Fallback, wenn keine Posts vorhanden sind
             )}
-          </section> 
-
+            </section> 
+          </div> {/* Ende white container div */}
         </div> {/* Ende linke Spalte */}
 
         {/* Rechte Spalte: Sidebar */}

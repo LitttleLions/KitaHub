@@ -32,17 +32,19 @@ const JobCard = ({ job, clickable = false }: JobCardProps) => {
   };
 
   return (
-    <Link 
+    <Link
       to={`/jobs/${job.id}`}
-      className={`block bg-white rounded-xl border ${job.featured ? 'border-kita-orange/30' : 'border-gray-100'} shadow-sm hover:shadow-md overflow-hidden transition-all duration-300 relative`}
+      // Applied card-like styling: rounded-lg, border, bg-card, shadow-sm, hover:shadow-lg
+      className={`block rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg overflow-hidden transition-shadow duration-200 relative ${job.featured ? 'border-kita-orange/30' : 'border-border'}`} // Use theme border color, keep orange highlight
     >
       {clickable && (
         <div className="absolute top-3 right-3 bg-white rounded-full p-1.5 shadow-sm z-10">
           <Heart className="h-4 w-4 text-kita-orange fill-kita-orange" />
         </div>
       )}
-      
-      <div className={`p-6 ${job.featured ? 'bg-kita-cream' : ''}`}>
+
+      {/* Removed featured background color from inner div, card background is handled above */}
+      <div className="p-6">
         <div className="flex items-start gap-4">
           <div className="flex-shrink-0">
             <CompanyAvatar

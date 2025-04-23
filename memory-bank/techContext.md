@@ -69,6 +69,3 @@
 - **AI Content Generation (Backend):** `openai`
 - **AI Image Generation (Backend):** `axios` (für Leonardo.ai API)
 - **Environment Variables (Backend):** Laden via `tsx --env-file .env` im `dev`-Skript (`server/package.json`).
-- **Testing:** (noch nicht spezifiziert)
-- **Build:** Vite, Docker
-- **Deployment:** (nicht spezifiziert, empfohlen: Reverse Proxy + SSL)

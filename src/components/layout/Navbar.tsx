@@ -112,9 +112,9 @@ const Navbar = () => {
     <nav className="bg-white py-4 shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
         <Logo />
-        
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-6">
+
+        {/* Desktop Navigation - Centered */}
+        <div className="hidden md:flex flex-grow justify-center">
           <NavigationMenu>
             <NavigationMenuList>
               {navigationItems.map((item) => (
@@ -165,34 +165,23 @@ const Navbar = () => {
               ))}
             </NavigationMenuList>
           </NavigationMenu>
-          
-          <Button asChild variant="outline" className="hover:text-kita-orange hover:border-kita-orange transition-colors">
+        </div>
+
+        {/* Desktop Action Buttons - Right Aligned */}
+        <div className="hidden md:flex items-center space-x-2">
+           {/* TODO: Add logic to show "Mein Profil" (outline) when logged in */}
+           <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:border-kita-orange hover:text-kita-orange transition-colors">
             <Link to="/login">Login</Link>
           </Button>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full hover:bg-kita-orange/10 hover:text-kita-orange transition-colors">
-                <User className="h-5 w-5" />
-                <span className="sr-only">Profil</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem asChild>
-                <Link to="/profile" className="cursor-pointer">Mein Profil</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/favorites" className="cursor-pointer">Favoriten</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/settings" className="cursor-pointer">Einstellungen</Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button asChild className="bg-kita-orange hover:bg-kita-orange/90">
+            <Link to="/register">Registrieren</Link>
+          </Button>
+           {/* TODO: Add Profile Dropdown back when user is logged in */}
+           {/* <DropdownMenu> ... </DropdownMenu> */}
         </div>
-        
-        {/* Mobile Navigation */}
-        <div className="md:hidden">
+
+        {/* Mobile Navigation Trigger */}
+        <div className="md:hidden flex items-center">
           <Collapsible
             open={mobileMenuOpen}
             onOpenChange={setMobileMenuOpen}
@@ -231,8 +220,10 @@ const Navbar = () => {
                 </svg>
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="absolute left-0 right-0 top-full bg-white shadow-lg p-4 z-50">
+            {/* Mobile Navigation Content */}
+            <CollapsibleContent className="absolute left-0 right-0 top-full bg-white shadow-lg p-4 z-50 border-t border-gray-100">
               <div className="flex flex-col space-y-3">
+                {/* Mobile Menu Items */}
                 {navigationItems.map((item) =>
                   item.dropdown ? (
                     <Collapsible key={item.name} className="w-full">
@@ -273,16 +264,15 @@ const Navbar = () => {
                     </Link>
                   )
                 )}
+                {/* Mobile Action Buttons */}
                 <div className="flex space-x-2 pt-3 border-t border-gray-100">
-                  <Button asChild variant="outline" size="sm" className="flex-1">
-                    <Link to="/login">Login</Link>
+                  <Button asChild variant="outline" size="sm" className="flex-1 border-gray-300 text-gray-700">
+                    <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Login</Link>
                   </Button>
-                  <Button asChild variant="ghost" size="icon" className="rounded-full">
-                    <Link to="/profile">
-                      <User className="h-5 w-5" />
-                      <span className="sr-only">Profile</span>
-                    </Link>
+                  <Button asChild size="sm" className="flex-1 bg-kita-orange hover:bg-kita-orange/90">
+                    <Link to="/register" onClick={() => setMobileMenuOpen(false)}>Registrieren</Link>
                   </Button>
+                   {/* TODO: Add mobile profile button/link */}
                 </div>
               </div>
             </CollapsibleContent>

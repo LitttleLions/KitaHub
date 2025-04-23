@@ -2,34 +2,17 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MapPin } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { fetchCompaniesByBundesland } from '@/services/company';
+// Removed unused imports useQuery and fetchCompaniesByBundesland
+import { GERMAN_STATES } from '@/lib/constants'; // Import shared constant
 
-const BUNDESLAENDER = [
-  { id: 'bw', name: 'Baden-Württemberg' },
-  { id: 'by', name: 'Bayern' },
-  { id: 'be', name: 'Berlin' },
-  { id: 'bb', name: 'Brandenburg' },
-  { id: 'hb', name: 'Bremen' },
-  { id: 'hh', name: 'Hamburg' },
-  { id: 'he', name: 'Hessen' },
-  { id: 'mv', name: 'Mecklenburg-Vorpommern' },
-  { id: 'ni', name: 'Niedersachsen' },
-  { id: 'nw', name: 'Nordrhein-Westfalen' },
-  { id: 'rp', name: 'Rheinland-Pfalz' },
-  { id: 'sl', name: 'Saarland' },
-  { id: 'sn', name: 'Sachsen' },
-  { id: 'st', name: 'Sachsen-Anhalt' },
-  { id: 'sh', name: 'Schleswig-Holstein' },
-  { id: 'th', name: 'Thüringen' }
-];
+// Removed local BUNDESLAENDER array
 
 const BundeslanderNavigation = () => {
   const navigate = useNavigate();
   
-  const handleStateClick = (stateName: string) => {
-    // Navigate to the kitas page with the bundesland filter applied
-    navigate(`/kitas?bundesland=${encodeURIComponent(stateName)}`);
+  // Modified to use state.value (URL slug) for navigation
+  const handleStateClick = (stateValue: string) => { 
+    navigate(`/kitas?bundesland=${stateValue}`); // Use state.value directly
   };
   
   return (
@@ -43,14 +26,15 @@ const BundeslanderNavigation = () => {
         </div>
         
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {BUNDESLAENDER.map((state) => (
+          {/* Use imported GERMAN_STATES */}
+          {GERMAN_STATES.map((state) => ( 
             <button
-              key={state.id}
-              onClick={() => handleStateClick(state.name)}
+              key={state.value} // Use state.value as key
+              onClick={() => handleStateClick(state.value)} // Pass state.value to handler
               className="flex items-center justify-center gap-2 p-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-700"
             >
               <MapPin className="h-4 w-4 text-kita-orange" />
-              <span>{state.name}</span>
+              <span>{state.label}</span> {/* Use state.label for display */}
             </button>
           ))}
         </div>

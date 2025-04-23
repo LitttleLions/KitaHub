@@ -29,21 +29,23 @@ const KitaSearchHero: React.FC<KitaSearchHeroProps> = ({
   subtitle,
   showFrequentSearches = true,
   showBottomLinks = false,
-  bgColor = "bg-gradient-to-r from-blue-50 to-indigo-50" // Default background
+  bgColor = "bg-transparent" // Default background is now transparent
 }) => {
   return (
-    <section className={`py-16 pt-24 ${bgColor}`}>
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl mx-auto">
+    <div className="container mx-auto px-4 md:px-6">
+      {/* Removed the outer section wrapper, background and padding are handled by the parent (Index.tsx) */}
+      <div className="max-w-3xl mx-auto text-center">
+        {/* Adjusted title styling and applied Poppins font */}
+        <h1 className="text-4xl md:text-5xl font-bold font-display text-slate-800 mb-4"> {/* Added font-display */}
+          {title}
+        </h1>
+        {subtitle && (
+            <p className="text-lg text-slate-600 mb-8 max-w-3xl mx-auto">
               {subtitle}
             </p>
           )}
-          <div className="bg-white p-6 rounded-lg shadow-lg">
+          {/* Adjusted search container styling: more padding, more rounded, stronger shadow */}
+          <div className="bg-white p-8 rounded-2xl shadow-xl">
             <KitaSearchForm
               searchText={searchText}
               setSearchText={setSearchText}
@@ -53,31 +55,35 @@ const KitaSearchHero: React.FC<KitaSearchHeroProps> = ({
               setSelectedState={setSelectedState} // Übergeben
               handleSearch={handleSearch}
             />
+            {/* Adjusted frequent searches styling */}
             {showFrequentSearches && (
-              <div className="mt-4 text-sm text-gray-500">
-                Häufige Suchen:
-                <Link to="/kitas?location=Berlin" className="ml-2 text-kita-blue hover:underline">Berlin</Link>
-                <Link to="/kitas?location=Hamburg" className="ml-2 text-kita-blue hover:underline">Hamburg</Link>
-                <Link to="/kitas?location=München" className="ml-2 text-kita-blue hover:underline">München</Link>
-                <Link to="/kitas?location=Köln" className="ml-2 text-kita-blue hover:underline">Köln</Link>
-                <Link to="/kitas?location=Frankfurt" className="ml-2 text-kita-blue hover:underline">Frankfurt</Link>
+              <div className="mt-6 text-base text-gray-600 flex flex-wrap justify-center items-center gap-2"> {/* Increased top margin and text size */}
+                <span>Häufige Suchen:</span>
+                {/* Adjusted link styling: white bg, border, slightly larger text */}
+                <Link to="/kitas?location=Berlin" className="bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm hover:bg-gray-50 transition-colors">Berlin</Link>
+                <Link to="/kitas?location=Hamburg" className="bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm hover:bg-gray-50 transition-colors">Hamburg</Link>
+                <Link to="/kitas?location=München" className="bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm hover:bg-gray-50 transition-colors">München</Link>
+                <Link to="/kitas?location=Köln" className="bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm hover:bg-gray-50 transition-colors">Köln</Link>
+                <Link to="/kitas?location=Frankfurt" className="bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm hover:bg-gray-50 transition-colors">Frankfurt</Link>
               </div>
             )}
           </div>
+          {/* Adjusted bottom links styling */}
           {showBottomLinks && (
-             <div className="mt-6 flex justify-center gap-4">
-                <Link to="/kitas" className="px-4 py-2 bg-white text-gray-700 rounded shadow hover:bg-gray-100">
+             <div className="mt-8 flex justify-center gap-4">
+                {/* Adjusted link styling: white bg, more rounded */}
+                <Link to="/kitas" className="bg-white px-4 py-2 border border-gray-300 text-gray-700 rounded-lg shadow-sm hover:border-gray-400 hover:bg-gray-50 transition-colors text-sm font-medium">
                   Suche nach Bundesland
                 </Link>
-                <Link to="/wissen" className="px-4 py-2 bg-white text-gray-700 rounded shadow hover:bg-gray-100">
+                <Link to="/wissen" className="bg-white px-4 py-2 border border-gray-300 text-gray-700 rounded-lg shadow-sm hover:border-gray-400 hover:bg-gray-50 transition-colors text-sm font-medium">
                   Wissenswertes zur Kita
                 </Link>
               </div>
           )}
         </div>
       </div>
-    </section>
-  );
-};
+    // Removed closing section tag
+  ); // Closing parenthesis for return statement
+}; // Closing brace for component function
 
 export default KitaSearchHero;

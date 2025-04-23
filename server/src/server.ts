@@ -13,6 +13,8 @@ import { fetchKnowledgePreview, importKnowledgePosts } from './services/knowledg
 
 // Import Kinderwelt routes
 import kinderweltRouter from './routes/kinderweltRoutes.js'; // .js Endung!
+// Import Import routes
+import importRouter from './routes/importRoutes.js'; // .js Endung!
 
 const app = express();
 const port = process.env.BACKEND_PORT || 3000; 
@@ -192,6 +194,18 @@ app.get('/api/import/bezirke', async (req: Request, res: Response, next: NextFun
         console.log(`[${tempJobId}] === /api/import/bezirke API call completed ===`);
     }
 });
+
+// --- Register Import API Routes ---
+// Existing import routes
+app.get('/api/import/knowledge/preview', async (req: Request, res: Response, next: NextFunction) => { /* ... existing code ... */ });
+app.post('/api/import/knowledge/start', async (req: Request, res: Response, next: NextFunction) => { /* ... existing code ... */ });
+app.post('/api/import/start', (req: Request, res: Response, next: NextFunction) => { /* ... existing code ... */ });
+app.get('/api/import/status/:jobId', async (req: Request<{ jobId: string }>, res: Response, next: NextFunction) => { /* ... existing code ... */ });
+app.get('/api/import/bundeslaender', async (req: Request, res: Response, next: NextFunction) => { /* ... existing code ... */ });
+app.get('/api/import/bezirke', async (req: Request, res: Response, next: NextFunction) => { /* ... existing code ... */ });
+// Register the new import router (contains POST /api/import/knowledge)
+app.use('/api/import', importRouter);
+
 
 // --- Register Kinderwelt API Routes ---
 app.use('/api/kinderwelt', kinderweltRouter);

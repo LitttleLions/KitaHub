@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import { MapPin, Star, Award } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-// Keep getPlaceholderImage for CompanyAvatar fallback
-import { getPlaceholderImage } from "@/utils/dataFormatUtils"; 
+// Import the new helper function and keep getPlaceholderImage for avatar
+import { getDisplayCoverImageUrl, getPlaceholderImage } from "@/utils/dataFormatUtils"; 
 import { Company } from '@/types/company';
 import CompanyAvatar from "@/components/ui/company-avatar";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -47,20 +47,13 @@ const KitaCard: React.FC<KitaCardProps> = ({ kita, index }) => {
     <Card className={`h-full transition-all hover:shadow-md ${isPremium ? 'ring-2 ring-amber-400 shadow-md' : ''}`}>
       <Link to={`/kita/${kita.id}`} className="h-full flex flex-col">
         <div className="relative h-44 overflow-hidden rounded-t-lg">
-          {kita.cover_image_url ? (
-            <img 
-              src={kita.cover_image_url}
-              alt={kita.name}
-              className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
-              onError={handleImageError}
-            />
-          ) : (
-            <img
-              src={PLACEHOLDER_IMAGE_URL} // Use standard placeholder
-              alt={kita.name}
-              className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
-            />
-          )}
+          {/* Use the new helper function to determine the image source */}
+          <img 
+            src={getDisplayCoverImageUrl(kita)} 
+            alt={kita.name}
+            className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
+            onError={handleImageError} // Keep onError pointing to the final fallback
+          />
           
           {isPremium && (
             <div className="absolute top-2 left-2">

@@ -1,4 +1,4 @@
-# System Patterns – kita.de Plattform
+men# System Patterns – kita.de Plattform
 
 **Version:** 1.0  
 **Stand:** April 2025
@@ -33,6 +33,9 @@
   - **Robuste Extraktion:** Einsatz dedizierter, robuster Extraktor-Funktionen (z.B. `extractAddress`) anstelle von komplexen Fallbacks oder Regex, um die Zuverlässigkeit der Datenextraktion zu erhöhen.
   - **Konsistentes Logging:** Gezieltes und klares Logging von Erfolgen, Fehlern (z.B. übersprungene Datensätze) und extrahierten Daten zur Verbesserung der Nachvollziehbarkeit und Fehlersuche.
   - **HTML-Formatierung erhalten:** Übernahme von HTML-Inhalten für bestimmte Felder (z.B. Beschreibungen) zur Beibehaltung der Formatierung für das Frontend.
+- **Datenformatierung & Anzeige (Frontend):**
+  - **Zentrale Hilfsfunktionen:** Nutzung von Utility-Funktionen (z.B. in `src/utils/dataFormatUtils.ts`) für konsistente Datenformatierung und -darstellung.
+  - **Konsistente Zufallsbilder (Kita Cover):** Einsatz der Funktion `getDisplayCoverImageUrl` (`dataFormatUtils.ts`) in allen relevanten Kita-Komponenten (`KitaCard`, `FeaturedKitaCard`, `HorizontalKitaCard`, `KitaDetailHeader`). Diese Funktion liefert entweder das spezifische Kita-Bild oder ein konsistent pro Kita ausgewähltes Zufallsbild aus `/public/images/kitas/` als Fallback, um visuelle Abwechslung zu gewährleisten.
 - **Containerisierung:**
   - Frontend & Backend als separate Docker-Container
   - Gemeinsames Netzwerk, Hot Reload, Healthchecks
@@ -47,14 +50,15 @@
   2. Die API-Abfrage (z.B. `fetchCompanyById`) die Felder explizit abfragt (`select`).
   3. Der Frontend-Mapper (z.B. `mapToCompany`) die abgefragten Daten korrekt in das Frontend-Objekt überträgt.
   4. Die Frontend-Komponente die Daten aus dem Objekt tatsächlich anzeigt. Ein Bruch an einer Stelle dieser Kette führt dazu, dass Daten nicht sichtbar sind.
-- **Layout-Pattern:** Öffentliche Seiten rendern `<Navbar />` und `<Footer />` individuell in ihrer Haupt-JSX-Struktur. Admin-Seiten verwenden ein separates `<AdminLayout />`.
+  - **Layout-Pattern:** Öffentliche Seiten rendern `<Navbar />` und `<Footer />` individuell in ihrer Haupt-JSX-Struktur. Admin-Seiten verwenden ein separates `<AdminLayout />`.
+- **Typ-Synchronisation (Supabase):** Bei Diskrepanzen zwischen Datenbank-Schema und Frontend-Typen (z.B. `src/types/company.ts`) müssen die Frontend-Typen an die Datenbank angepasst werden. Die generierten Supabase-Typen (`src/integrations/supabase/types.ts`) dienen als Referenz. Bei Bedarf müssen Komponenten, die die angepassten Typen verwenden, ebenfalls aktualisiert werden (z.B. durch Hinzufügen von Typprüfungen `Array.isArray()` oder Anpassung von Logik).
 
 ---
 
 ## Komponentenbeziehungen
 
 - **Kita-Suche** nutzt **KitaCard**, Filter-Komponenten, Karten-Komponenten
-- **Kita-Detail** nutzt Tabs: Über uns, Jobs, Galerie, Premium
+ - **Kita-Detail** nutzt Tabs: Über uns, Jobs, Galerie, Premium
 - **Jobbörse** nutzt JobCard, Filter, Detailansicht
 - **Matching** nutzt Formular, Ergebnisliste, Favoriten
 - **E-Learning** nutzt Kurslisten, Detail, Fortschritt, Zertifikate
@@ -90,7 +94,10 @@
 
 ## Kritische Implementierungspfade
 
-- **Import-Flow:** Admin → Backend-API → Scraper → Status/Logs → Ergebnis
+- **Kita-Import-Flow:** Admin (`/admin/import`) → Backend-API (`/api/import/start`) → Scraper (`kitaDeScraper`) → Status/Logs (`importStatusService`) → Ergebnis
+- **Wissens-Import-Flow (Massenimport):** Admin (`/admin/knowledge`) → Backend-API (`POST /api/import/knowledge`) → Service (`knowledgeImportService` mit Paginierung, asynchron) → Status/Logs (`importStatusService`) → Ergebnis (Job-ID)
+- **Wissens-Import-Flow (Gezielt):** Admin (`/admin/knowledge`) → Suche (`GET /api/import/knowledge/search`) → Auswahl → Backend-API (`POST /api/import/knowledge/specific`) → Service (`knowledgeImportService` mit IDs, asynchron) → Status/Logs (`importStatusService`) → Ergebnis (Job-ID)
+- **Wissens-Admin-Flow:** Liste (`/admin/knowledge-list`, paginiert, Suche, Sortierung) → Bearbeiten-Button → Editierseite (`/admin/knowledge/edit/:postId`) → Formular (`react-hook-form`) → Speichern-Button → Service (`updateKnowledgePost`) → DB Update
 - **Kita-Suche:** Filter → API → Ergebnisliste → Detail
 - **Job-Flow:** Job-Formular → API → Jobliste → Detail
 - **Matching:** Formular → Algorithmus → Ergebnisliste

@@ -5,12 +5,13 @@ import { ArrowLeft, MapPin, Star, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Company } from '@/types/company';
+import { getDisplayCoverImageUrl } from '@/utils/dataFormatUtils'; // Import the helper function
 
 interface KitaDetailHeaderProps {
   kita: Company;
 }
 
-const PLACEHOLDER_IMAGE_URL = '/placeholder.svg';
+const PLACEHOLDER_IMAGE_URL = '/placeholder.svg'; // Keep the ultimate fallback
 
 // Helper function for image error handling
 const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -28,18 +29,14 @@ const KitaDetailHeader: React.FC<KitaDetailHeaderProps> = ({ kita }) => {
 
   return (
     <div className="relative h-64 md:h-80 w-full bg-gray-200 overflow-hidden">
-      {kita.cover_image_url ? (
-        <img
-          src={kita.cover_image_url}
-          alt={kita.name}
-          className="w-full h-full object-cover"
-          onError={handleImageError}
-        />
-      ) : (
-        <div className="w-full h-full bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center">
-          <span className="text-gray-500">Kein Titelbild verfügbar</span>
-        </div>
-      )}
+      {/* Use the helper function to get the correct image URL */}
+      <img
+        src={getDisplayCoverImageUrl(kita)}
+        alt={kita.name}
+        className="w-full h-full object-cover"
+        onError={handleImageError} // Keep onError pointing to the final fallback
+      />
+      {/* Removed the explicit fallback div, as getDisplayCoverImageUrl handles it */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
       <div className="absolute bottom-0 left-0 w-full">
         <div className="container mx-auto px-4 md:px-6 pb-6">

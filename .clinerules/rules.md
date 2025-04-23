@@ -259,3 +259,21 @@ By strictly following these guidelines, you'll ensure smooth transitions between
 *   **Linear Flow:** Currently, using `new_task` creates a linear sequence. The old task ends, and the new one begins. The old task history remains accessible for backtracking.
 *   **User Approval:** You always have control, approving the handoff and having the chance to modify the context Cline proposes to carry forward.
 *   **Flexibility:** The core `new_task` tool is a flexible building block. Experiment with `.clinerules` to create workflows that best suit your needs, whether for strict context management, task decomposition, or other creative uses.
+
+## Agent Behavior Restrictions – MANDATORY GUIDELINE
+
+### 🚫 Proactive TODO Execution is Forbidden
+
+You **MUST NOT** proactively search for, interpret, or execute any `TODO` comments or annotations found in code files **unless** the user explicitly instructs you to do so as part of a defined task.
+
+- **You MUST treat all TODO comments as non-actionable** unless tied to a current, confirmed user request.
+- **You MUST NOT scan codebases for open TODOs as part of self-directed context building.**
+- **You MUST NOT rewrite or remove TODOs unless explicitly directed.**
+
+> Example of non-compliant behavior:
+> - Cline detects a TODO in `src/utils/validate.js` and begins refactoring it without user instruction.
+
+> Example of compliant behavior:
+> - User says: “Please resolve the TODO in `validate.js` related to email format.”
+
+**Reasoning**: TODOs may be outdated, vague, or context-sensitive. Executing them without user confirmation can introduce unintended side effects, bugs, or break design constraints.

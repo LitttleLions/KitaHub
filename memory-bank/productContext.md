@@ -22,7 +22,8 @@
 - **Digitale Jobbörse** vereinfacht Personalgewinnung.
 - **E-Learning** fördert Qualifikation & Bindung von Fachkräften.
 - **Kinderwelt** bietet zusätzlichen Mehrwert, bindet Nutzer frühzeitig und verbessert SEO.
-- **Admin-Tools** erleichtern Datenpflege & Content-Management.
+- **Admin-Tools** erleichtern Datenpflege & Content-Management (z.B. durch gezielten Wissensimport).
+- **Wissensbereich** bietet bessere Navigation durch Breadcrumbs und Kategorie-Links.
 
 ---
 
@@ -33,7 +34,7 @@
 - **Jobbörse:** Einfaches Inserieren, Pakete, Bezahlung
 - **Kurse:** Übersicht, Kauf, Fortschritt, Zertifikate
 - **Kinderwelt:** Katalog mit Geschichten, Detailansicht mit Text (Markdown), Generierung via Keyword-Eingabe.
-- **Admin-Bereich:** CRUD für Kitas & Jobs, Datenimport, Uploads
+- **Admin-Bereich:** CRUD für Kitas & Jobs, Datenimport (Massen- & gezielter Import für Wissen), Uploads
 - **Mobile First:** Optimiert für Smartphones & Tablets
 - **Schnelle Ladezeiten:** Moderne Frontend-Technologien
 - **DSGVO-konform:** Datenschutz & Tracking
@@ -45,4 +46,4 @@
 - **Eltern:** Schnell passende Kitas finden & vergleichen, Kontakt aufnehmen
 - **Träger:** Einfach Profile & Jobs verwalten, Sichtbarkeit steigern
 - **Fachkräfte:** Passende Jobs & Kurse entdecken, bewerben, lernen
-- **Admins:** Übersichtliche Verwaltung, einfache Datenpflege
+- **Admins:** Übersichtliche Verwaltung, einfache Datenpflege (verbessert durch gezielten Wissensimport)

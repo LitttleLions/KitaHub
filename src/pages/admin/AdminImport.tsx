@@ -553,7 +553,7 @@ const AdminImport: React.FC = () => {
                    readOnly
                    value={importedKitas.join('\n')} // Join the unique names
                    className="h-32 font-mono text-xs" // Adjusted height
-                   placeholder="Verarbeitete Kita-Namen erscheinen hier..."
+                    placeholder="Verarbeitete Kita-Namen erscheinen hier..."
                  />
                </div>
             )}

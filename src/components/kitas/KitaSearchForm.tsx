@@ -31,19 +31,20 @@ const KitaSearchForm: React.FC<KitaSearchFormProps> = ({
   handleSearch
 }) => {
   return (
-    <form onSubmit={handleSearch} className="w-full"> {/* max-w entfernt für Flexibilität */}
-      <div className="bg-white p-4 rounded-xl shadow-md">
-        {/* Layout angepasst für 3 Spalten + Button */}
-        <div className="flex flex-col lg:flex-row gap-3 items-center">
-          {/* Suchfeld */}
-          <div className="relative flex-1 w-full lg:w-auto">
+    // Removed inner background/shadow div, parent handles the card style
+    <form onSubmit={handleSearch} className="w-full">
+      {/* Layout angepasst für 3 Spalten + Button */}
+      <div className="flex flex-col lg:flex-row gap-3 items-center">
+        {/* Suchfeld */}
+        <div className="relative flex-1 w-full lg:w-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
               type="text"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Name der Kita oder Träger"
-              className="w-full pl-10 pr-3 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-kita-orange focus:border-kita-orange" // Styling angepasst
+              placeholder="Name der Kita oder des Trägers"
+              // Adjusted styling: lighter border, consistent padding/rounding, removed focus ring
+              className="w-full pl-10 pr-3 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 text-sm"
             />
           </div>
 
@@ -55,18 +56,20 @@ const KitaSearchForm: React.FC<KitaSearchFormProps> = ({
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="Ort oder PLZ"
-              className="w-full pl-10 pr-3 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-kita-orange focus:border-kita-orange" // Styling angepasst
+               // Adjusted styling: lighter border, consistent padding/rounding, removed focus ring
+              className="w-full pl-10 pr-3 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 text-sm"
             />
           </div>
 
           {/* Bundesland Dropdown */}
           <div className="relative flex-1 w-full lg:w-auto">
-             <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
+             <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none z-10" /> {/* Ensure icon is above select */}
              <Select value={selectedState} onValueChange={setSelectedState}>
-               <SelectTrigger className="w-full pl-10 pr-3 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-kita-orange focus:border-kita-orange text-gray-500"> {/* Styling angepasst */}
+                {/* Adjusted styling: lighter border, consistent padding/rounding, removed focus ring */}
+               <SelectTrigger className="w-full pl-10 pr-3 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 text-gray-500 text-sm bg-white">
                  <SelectValue placeholder="Alle Bundesländer" />
                </SelectTrigger>
-               <SelectContent>
+               <SelectContent> {/* Keep default content styling */}
                  <SelectItem value="all">Alle Bundesländer</SelectItem>
                  {GERMAN_STATES.map((state) => (
                    <SelectItem key={state.value} value={state.value}>
@@ -77,15 +80,15 @@ const KitaSearchForm: React.FC<KitaSearchFormProps> = ({
              </Select>
           </div>
 
-          {/* Suchbutton */}
+          {/* Suchbutton - Adjusted color, hover state, and font weight */}
           <Button
             type="submit"
-            className="bg-kita-green hover:bg-kita-green/90 text-white py-3 px-6 rounded-lg w-full lg:w-auto" // Styling angepasst
+            className="bg-lime-600 hover:bg-lime-700 text-white py-3 px-6 rounded-lg w-full lg:w-auto text-sm font-semibold" /* Changed green, added font-semibold */
           >
             <Search className="mr-2 h-4 w-4 inline" /> Suchen
           </Button>
         </div>
-      </div>
+      {/* Removed inner background/shadow div closing tag */}
     </form>
   );
 };

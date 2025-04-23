@@ -42,10 +42,11 @@ import AdminKitas from "./pages/admin/AdminKitas";
 import AdminJobs from "./pages/admin/AdminJobs";
 import AdminKitaForm from "./pages/admin/AdminKitaForm";
 import AdminJobForm from "./pages/admin/AdminJobForm"; // Import the new job form component
-import AdminImport from "./pages/admin/AdminImport"; // Import the new import component
-import KnowledgeAdminPage from "./pages/admin/KnowledgeAdminPage"; // Wissen-Admin-Seite
-import KnowledgeListAdminPage from "./pages/admin/KnowledgeListAdminPage"; // Wissen-Liste
-import KnowledgePostPage from "./pages/KnowledgePostPage"; // Öffentliche Wissens-Seite
+import AdminImport from "./pages/admin/AdminImport";
+import KnowledgeAdminPage from "./pages/admin/KnowledgeAdminPage";
+import KnowledgeListAdminPage from "./pages/admin/KnowledgeListAdminPage";
+import KnowledgeEditAdminPage from "./pages/admin/KnowledgeEditAdminPage"; // NEU: Import für Editierseite
+import KnowledgePostPage from "./pages/KnowledgePostPage";
 import KnowledgeCategoryPage from "./pages/KnowledgeCategoryPage"; // Kategorie-Seite
 import KnowledgeOverviewPage from "./pages/KnowledgeOverviewPage"; // NEU: Übersichtsseite
 
@@ -129,8 +130,9 @@ const App = () => (
             <Route path="jobs/new" element={<AdminJobForm />} />
             <Route path="jobs/edit/:id" element={<AdminJobForm />} />
             <Route path="import" element={<AdminImport />} />
-            <Route path="knowledge" element={<KnowledgeAdminPage />} />
-            <Route path="knowledge-list" element={<KnowledgeListAdminPage />} />
+            <Route path="knowledge" element={<KnowledgeAdminPage />} /> {/* Import-Steuerung */}
+            <Route path="knowledge-list" element={<KnowledgeListAdminPage />} /> {/* Liste */}
+            <Route path="knowledge/edit/:postId" element={<KnowledgeEditAdminPage />} /> {/* NEU: Editier-Route */}
             {/* Optional: Admin-Route für Kinderwelt hinzufügen */}
             {/* <Route path="kinderwelt" element={<AdminKinderweltPage />} /> */}
           </Route>

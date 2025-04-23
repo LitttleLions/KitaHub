@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -23,24 +22,24 @@ const JobBoard = () => {
 
   const { data, isLoading } = useQuery({
     queryKey: ['jobs', searchText, location, jobType, page],
-    queryFn: () => fetchJobs({ 
-      keyword: searchText, 
-      location, 
+    queryFn: () => fetchJobs({
+      keyword: searchText,
+      location,
       type: jobType !== 'all' ? jobType : undefined, // Don't filter if 'all' is selected
-      limit, 
-      offset: (page - 1) * limit 
+      limit,
+      offset: (page - 1) * limit
     }),
   });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    
+
     const params = new URLSearchParams();
     if (searchText) params.set('q', searchText);
     if (location) params.set('location', location);
     if (jobType && jobType !== 'all') params.set('type', jobType);
-    
+
     setSearchParams(params);
   };
 
@@ -58,7 +57,7 @@ const JobBoard = () => {
       <main className="flex-grow">
         {!isSearchView ? (
           <>
-            <JobBoardHero 
+            <JobBoardHero
               searchText={searchText}
               setSearchText={setSearchText}
               location={location}
@@ -76,7 +75,7 @@ const JobBoard = () => {
                     Entdecken Sie aktuelle Jobangebote aus dem Bereich frühkindliche Bildung und Betreuung auf kita.de
                   </p>
                 </div>
-                <JobList 
+                <JobList
                   jobs={data?.jobs.slice(0, 6) || []}
                   isLoading={isLoading}
                   isPreview={true}
@@ -125,28 +124,30 @@ const JobBoard = () => {
                 </div>
               </div>
             </section>
-            
+
             <section className="py-12">
               <div className="container mx-auto px-4">
-                <div className="flex flex-col lg:flex-row gap-8">
-                  {/* Sidebar with filters */}
-                  <div className="w-full lg:w-1/4">
+                 {/* Wrapper div for white background, padding, shadow */}
+                <div className="bg-white p-6 md:p-8 rounded-lg shadow-md">
+                  <div className="flex flex-col lg:flex-row gap-8">
+                    {/* Sidebar with filters */}
+                    <div className="w-full lg:w-1/4">
                     <JobFilters />
-                    
+
                     {/* AI Matching Card */}
                     <div className="mt-6">
                       <AIMatchingCard />
                     </div>
                   </div>
-                  
+
                   {/* Main content */}
                   <div className="w-full lg:w-3/4">
                     <h2 className="text-2xl font-bold mb-6">
-                      {isLoading ? 'Stellenangebote werden geladen...' : 
+                      {isLoading ? 'Stellenangebote werden geladen...' :
                         `${data?.total || 0} Stellenangebote gefunden`}
                     </h2>
-                    
-                    <JobList 
+
+                    <JobList
                       jobs={data?.jobs || []}
                       isLoading={isLoading}
                       total={data?.total || 0}
@@ -157,7 +158,8 @@ const JobBoard = () => {
                   </div>
                 </div>
               </div>
-            </section>
+            </div>
+          </section>
           </>
         )}
       </main>

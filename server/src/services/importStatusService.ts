@@ -1,4 +1,9 @@
 // Basic in-memory store for job statuses and logs
+import type { Company } from '../types/company.d.ts'; // Import Company type
+
+// Define KitaMappedData type alias
+type KitaMappedData = Partial<Company>;
+
 interface JobStatus {
   status: 'pending' | 'running' | 'completed' | 'failed';
   message: string;
