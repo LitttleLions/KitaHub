@@ -8,7 +8,7 @@
     "build": "tsc --project tsconfig.json",
     "start": "node dist/server.js",
     "watch": "tsc --project tsconfig.json --watch",
-    "dev": "nodemon --watch src --ext ts,js,json --exec \"tsx src/server.ts\""
+    "dev": "nodemon --watch src --ext ts,js,json --exec \"tsx --env-file .env src/server.ts\""
   },
   "author": "",
   "license": "ISC",
@@ -20,12 +20,17 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
+    "@types/uuid": "^10.0.0",
     "axios": "^1.8.4",
     "cheerio": "^1.0.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "module-alias": "^2.2.3",
     "node-fetch": "^3.3.2",
+    "openai": "^4.95.1",
+    "slugify": "^1.6.6",
+    "uuid": "^11.1.0",
     "vite_react_shadcn_ts": "file:.."
   },
   "devDependencies": {

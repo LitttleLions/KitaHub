@@ -21,6 +21,7 @@
 - **Premium-Profile** bieten Trägern bessere Sichtbarkeit & Kontrolle.
 - **Digitale Jobbörse** vereinfacht Personalgewinnung.
 - **E-Learning** fördert Qualifikation & Bindung von Fachkräften.
+- **Kinderwelt** bietet zusätzlichen Mehrwert, bindet Nutzer frühzeitig und verbessert SEO.
 - **Admin-Tools** erleichtern Datenpflege & Content-Management.
 
 ---
@@ -31,6 +32,7 @@
 - **Attraktive Profile:** Bilder, Videos, Auszeichnungen, Kontakt
 - **Jobbörse:** Einfaches Inserieren, Pakete, Bezahlung
 - **Kurse:** Übersicht, Kauf, Fortschritt, Zertifikate
+- **Kinderwelt:** Katalog mit Geschichten, Detailansicht mit Text (Markdown), Generierung via Keyword-Eingabe.
 - **Admin-Bereich:** CRUD für Kitas & Jobs, Datenimport, Uploads
 - **Mobile First:** Optimiert für Smartphones & Tablets
 - **Schnelle Ladezeiten:** Moderne Frontend-Technologien

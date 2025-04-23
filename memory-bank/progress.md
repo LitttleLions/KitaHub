@@ -52,17 +52,49 @@
     - Bundesland-Import-Fehler behoben (korrekte Zuordnung via `server/src/services/importService.ts` und `server/src/config/germanStates.ts`).
     - Bundesländer-Auswahl nutzt nun `GERMAN_STATES`-Konstante (`src/lib/constants.ts`).
     - Bezirks-Abruf funktioniert wieder (korrekte URL wird an Backend gesendet).
-    - State `bezirkFilter` und Reset-Logik in `src/pages/admin/AdminImport.tsx` hinzugefügt.
+    - **Bezirks-Filter implementiert:** Ein Filterfeld wurde in `src/pages/admin/AdminImport.tsx` hinzugefügt, um die Bezirksliste bei langen Listen durchsuchbar zu machen. Die Implementierung erfolgte via `write_to_file`.
+    - **Bezirks-Scraping (Paginierung):** Der Scraper (`server/src/scrapers/kitaDeScraper.ts`) wurde angepasst, um die alphabetische Paginierung auf den Bundeslandseiten zu berücksichtigen.
+    - **Fortschrittsanzeige Admin-Import:** Backend (`importService.ts`, `importStatusService.ts`) wurde angepasst, um Fortschritt granularer zu melden.
+    - **Startseiten-Layout:** Padding um Hero entfernt, `<Features>` und `<Stats>` vor Footer platziert (`Index.tsx`).
+    - **Filter-Problem `/kitas`:** Datenbankfehler beim Bezirksabruf behoben (`metaService.ts` verwendet nun korrekten Spaltennamen `bezirk`).
+- **Kinderwelt (MVP):**
+    - Frontend-Struktur (Seiten, Komponenten, Service, Typen, Routing, Navigation) erstellt.
+    - Backend-Struktur (DB-Tabelle `stories`, Typen, DB-Service, OpenAI-Service, API-Routen) erstellt.
+    - Funktion zum Generieren von Geschichten via Frontend-Formular implementiert (ruft Backend-API auf).
+    - OpenAI-Integration für Text- und Titelgenerierung (Markdown) funktionsfähig.
+    - Speichern und Abrufen der Geschichten aus Supabase implementiert.
+    - RLS-Policy für INSERT in `stories` hinzugefügt.
+    - Markdown-Rendering auf Detailseite implementiert (`react-markdown`).
+    - Layout-Problem (doppelter Header/Footer) behoben durch Umstellung auf individuelles Layout pro Seite.
+    - "Zurück"-Link und Sidebar für verwandte Geschichten auf Detailseite hinzugefügt.
+    - Platzhalterbild für fehlende Cover-Bilder implementiert.
+- **Kinderwelt Filter (Implementiert):**
+    - Backend (`kinderweltDbService.ts`) kann nach Alter, Lesezeit und Thema filtern.
+    - Frontend (`KinderweltKatalogPage.tsx`) enthält Filter-UI (Dropdowns) und übergibt Filter an API.
+    - Frontend-Typen (`src/types/kinderwelt.ts`) für Filter (`AgeRange`, `ReadingTimeRange`) definiert.
+- **Supabase Client Trennung (Behoben):**
+    - Kritischer Fehler durch Verwechslung von Frontend- (Anon Key) und Backend-Client (Service Role Key) behoben.
+    - Backend-Client umbenannt (`supabaseServiceRoleClient.ts`), Frontend-Imports korrigiert.
+    - Korrektes Laden von `.env`-Variablen im Backend sichergestellt (`tsx --env-file`).
+    - RLS Policies für Storage (`story-images`) für `service_role` bestätigt/korrigiert.
+- **Kinderwelt Bildgenerierung (Funktionsfähig):**
+    - Backend (`openaiService.ts`) generiert Metadaten und Bildbeschreibungen (`[Bild: ...]`).
+    - Backend (`leonardoService.ts`) implementiert zur Generierung von Bildern via Leonardo.ai (Flux Speed) und Upload zu Supabase Storage (funktioniert nach Client-Fix).
+    - Backend-Route (`kinderweltRoutes.ts`) integriert Text- und Bildgenerierung (berücksichtigt nun Zielvorgaben aus Frontend) und speichert URLs in DB.
+    - Frontend (`KinderweltStoryPage.tsx`) zeigt Cover-Bild an und ersetzt `[Bild: ...]`-Marker durch `<img>`-Tags.
+    - Frontend-Formular (`StoryGeneratorForm.tsx`) erweitert um Auswahl für Alter, Lesezeit, Thema.
+    - OpenAI-Prompt (`openaiService.ts`) angepasst, um Zielvorgaben zu berücksichtigen und klarere Bildbeschreibungen (mit Tierart) anzufordern.
+    - Layout der Katalogseite (`KinderweltKatalogPage.tsx`) angepasst (Liste oben, Formular unten).
+- **Wissen-Sidebar (`KnowledgeSidebar.tsx`):**
+    - Zeigt nun die 3 neuesten Kinderwelt-Geschichten unterhalb der neuesten Wissensbeiträge an.
+    - Datenabruf für Geschichten via `fetchStoryCatalog` mit `limit: 3` implementiert.
+    - Verarbeitung der `category_terms` zur Anzeige aller Kategorien robuster gestaltet.
 
 ---
 
 ## Was fehlt noch? / Aktuelle Probleme
 
-- **Bezirks-Filter implementieren (Priorität 1 - Neuer Task):**
-    - **Problem:** Bei Bundesländern mit vielen Bezirken ist die Checkbox-Liste in `src/pages/admin/AdminImport.tsx` unübersichtlich.
-    - **Kontext:** Der State `bezirkFilter` existiert, aber das UI-Element (Input-Feld) und die Filterlogik für die `.map()`-Funktion fehlen noch. Mehrere Versuche mit `replace_in_file` schlugen fehl.
-    - **Nächster Schritt:** Implementierung des Filterfelds und der Filterlogik in `src/pages/admin/AdminImport.tsx` (empfohlen: `write_to_file` verwenden).
-- **Refaktorisierung Kita-Import (Priorität 2):**
+- **Refaktorisierung Kita-Import (Priorität 1):**
     - Hilfsfunktionen auslagern (`utils/cheerioUtils.ts`).
     - Hauptfunktion `extractDetailsFromHtml` weiter vereinfachen.
     - Tests für Extraktoren implementieren.
@@ -76,7 +108,16 @@
 - **Storage-Bereinigung:** Bei Löschungen implementieren.
 - **Produktions-Setup:** Reverse Proxy & SSL konfigurieren.
 - **Tests:** Automatisierte Tests für Backend und Frontend fehlen weitgehend.
-
+- **Kinderwelt (Offene Punkte):**
+    - **Test der erweiterten Generierung:** Überprüfen, ob die Zielvorgaben (Alter, Lesezeit, Thema) korrekt berücksichtigt werden und die Bildqualität (Tiererkennung) verbessert ist.
+    - **SEO-Optimierung:** Structured Data auf Detailseite (`KinderweltStoryPage.tsx`).
+    - **Generierungs-Endpunkt absichern:** Admin-Auth für `POST /api/kinderwelt/generate-and-save`.
+    - **Audio-Generierung (TTS):** Implementierung.
+    - **PDF-Generierung:** Implementierung.
+    - **Interaktive Elemente (Quiz, Ausmalbild):** Implementierung (MVP++).
+    - **Empfehlungs-Widget:** Implementierung (Phase 2).
+    - Teaser-Banner auf anderen Seiten (optional).
+- **Backend:** Untersuchung der verbleibenden TypeScript-Fehler in Express-Routen.
 - **Docker-Entfernung:**
   - Docker und docker-compose wurden aus dem Entwicklungsprozess entfernt, um lokale Entwicklung und Debugging zu vereinfachen.
   - Die Docker-Konfigurationsdateien (`Dockerfile`, `docker-compose.yml`) bleiben im Projekt erhalten, um eine spätere Reaktivierung zu ermöglichen.

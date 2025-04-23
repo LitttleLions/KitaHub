@@ -10,8 +10,11 @@
 - **Frontend:** React + TypeScript, Vite, Tailwind CSS, Shadcn UI
 - **Backend:** Node.js + Express (Import-Service)
 - **Datenbank:** Supabase (Postgres)
-- **Containerisierung:** Docker, docker-compose
-- **Kommunikation:** HTTP im Docker-Netzwerk, REST-APIs
+  - **Client-Strategie:** Es werden zwei getrennte Supabase-Clients verwendet:
+    - **Frontend-Client:** `src/integrations/supabase/client.ts` nutzt den `ANON_KEY` für öffentliche Lesezugriffe und Operationen, die den RLS-Policies unterliegen.
+    - **Backend-Client (Service Role):** `server/src/supabaseServiceRoleClient.ts` nutzt den `SERVICE_ROLE_KEY` für privilegierte Backend-Operationen (z.B. Storage-Uploads, DB-Schreibzugriffe unter Umgehung von RLS).
+- **Containerisierung:** Docker, docker-compose (derzeit deaktiviert, siehe `progress.md`)
+- **Kommunikation:** HTTP, REST-APIs
 
 ---
 
@@ -44,6 +47,7 @@
   2. Die API-Abfrage (z.B. `fetchCompanyById`) die Felder explizit abfragt (`select`).
   3. Der Frontend-Mapper (z.B. `mapToCompany`) die abgefragten Daten korrekt in das Frontend-Objekt überträgt.
   4. Die Frontend-Komponente die Daten aus dem Objekt tatsächlich anzeigt. Ein Bruch an einer Stelle dieser Kette führt dazu, dass Daten nicht sichtbar sind.
+- **Layout-Pattern:** Öffentliche Seiten rendern `<Navbar />` und `<Footer />` individuell in ihrer Haupt-JSX-Struktur. Admin-Seiten verwenden ein separates `<AdminLayout />`.
 
 ---
 
@@ -56,6 +60,31 @@
 - **E-Learning** nutzt Kurslisten, Detail, Fortschritt, Zertifikate
 - **Admin** nutzt Tabellen, Formulare, Uploads, Statusanzeigen
 - **Import-Service** wird vom Admin-Bereich angesteuert
+- **Kinderwelt** nutzt Katalogseite (`KinderweltKatalogPage`), Detailseite (`KinderweltStoryPage`), Vorschaukarte (`StoryCard`), Hero-Bereich (`KinderweltHero`), Generierungsformular (`StoryGeneratorForm`), Sidebar (`RelatedStoriesSidebar`).
+
+---
+
+## Kinderwelt Architektur
+
+- **Frontend:**
+  - Eigene Seiten (`/kinderwelt`, `/kinderwelt/:slug`) und Komponenten (`src/components/kinderwelt/`).
+  - Datenabruf und -mutation (Generierung) via React Query (`useQuery`, `useMutation`) und `kinderweltService.ts`.
+  - Anzeige von Markdown-Inhalten mit `react-markdown` und `remark-gfm`.
+  - Layout mit individueller Einbindung von `Navbar` und `Footer`. Detailseite mit 2-Spalten-Layout (Hauptinhalt + Sidebar).
+- **Backend:**
+  - Eigener Router (`kinderweltRoutes.ts`) unter `/api/kinderwelt`.
+  - Endpunkte für Katalog (`GET /`), Detail (`GET /:slug`), Generierung (`POST /generate-and-save`).
+  - Service (`kinderweltDbService.ts`) für Datenbankoperationen auf `stories`-Tabelle (Supabase).
+  - Service (`openaiService.ts`) zur Kommunikation mit OpenAI API (Chat Completions) für Titel- und Textgenerierung (Markdown).
+  - Verwendung von `slugify` zur URL-Generierung.
+- **Datenfluss (Generierung):**
+  1. Frontend (`StoryGeneratorForm`) sendet Prompt an Backend (`POST /generate-and-save`).
+  2. Backend (`kinderweltRoutes.ts`) ruft `openaiService.generateStory` auf.
+  3. `openaiService` sendet Prompt an OpenAI API.
+  4. OpenAI antwortet mit Titel und Markdown-Text.
+  5. Backend extrahiert Titel, generiert Slug, speichert alles via `kinderweltDbService.createStory` in Supabase (`stories`-Tabelle).
+  6. Backend sendet gespeicherte Story als JSON zurück an Frontend.
+  7. Frontend (`KinderweltKatalogPage`) invalidiert Query (`stories`) und zeigt neue Story an.
 
 ---
 

@@ -130,6 +130,10 @@ const Footer = () => {
               <Link to="/agb" className="text-sm text-gray-500 hover:text-kita-orange transition-colors">
                 AGB
               </Link>
+              {/* Neuer Link zur Kinderwelt */}
+              <Link to="/kinderwelt" className="text-sm text-gray-500 hover:text-kita-orange transition-colors">
+                Kinderwelt
+              </Link>
             </div>
           </div>
         </div>

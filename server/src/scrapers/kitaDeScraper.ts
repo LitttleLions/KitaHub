@@ -119,75 +119,99 @@ export async function getBundeslandUrlsAndNames(jobId: string, maxRetries = 3, i
 
 /**
  * Fetches a Bundesland page and extracts URLs and names for each Bezirk/Region within it.
- * Includes a simple retry mechanism for network errors.
+ * Includes a simple retry mechanism for network errors and handles alphabetical pagination.
  */
 export async function getBezirkUrlsAndNames(jobId: string, bundeslandUrl: string, maxRetries = 3, initialDelay = 1000): Promise<{ name: string, url: string }[]> {
-    addLog(jobId, `Fetching Bezirk list from ${bundeslandUrl}`);
+    addLog(jobId, `Fetching Bezirk list from ${bundeslandUrl} (including pagination)`);
+    const allBezirke = new Map<string, string>(); // Use Map to store URL -> Name, ensures uniqueness by URL
 
-    let retries = 0;
-    let currentDelay = initialDelay;
-
-    while(retries < maxRetries) {
+    const fetchAndParsePage = async (url: string, attempt = 1): Promise<string[]> => {
+        addLog(jobId, `   - Fetching page: ${url} (Attempt ${attempt}/${maxRetries})`);
         try {
-            console.log(`[${jobId}] Calling axios.get for ${bundeslandUrl} (Attempt ${retries + 1}/${maxRetries})...`);
-            const response = await axios.get(bundeslandUrl, { headers: HEADERS, timeout: 15000 }); // Added timeout
-            console.log(`[${jobId}] axios.get successful for ${bundeslandUrl}. Status: ${response.status}`);
-
+            const response = await axios.get(url, { headers: HEADERS, timeout: 15000 });
+            console.log(`[${jobId}] axios.get successful for ${url}. Status: ${response.status}`);
             if (response.status < 200 || response.status >= 300) {
-                 throw new Error(`Request failed with status code ${response.status}`);
+                throw new Error(`Request failed with status code ${response.status}`);
             }
 
             const $ = cheerio.load(response.data);
-            const bezirke: { name: string, url: string }[] = [];
-            const seenUrls = new Set<string>();
-            const bundeslandPath = new URL(bundeslandUrl).pathname;
+            const bundeslandPath = new URL(bundeslandUrl).pathname; // Base path for comparison
+            let foundOnPage = 0;
 
-            // Angepasster Selektor: Bezirks-Links innerhalb der Liste ol.cities, kein Slash am Ende nötig
-            $(`ol.cities a[href^="${bundeslandPath}"]`).each((index, element) => { // Let TS infer types
-                const elNode = $(element); // Use a different variable name
+            // Extract Bezirke from the current page
+            $(`ol.cities a[href^="${bundeslandPath}"], ul.cities a[href^="${bundeslandPath}"]`).each((index, element) => {
+                const elNode = $(element);
                 const href = elNode.attr('href');
-                if (href && href.startsWith(bundeslandPath) && href.length > bundeslandPath.length) {
+                // Ensure the link goes one level deeper (is a Bezirk link)
+                if (href && href.startsWith(bundeslandPath) && href.split('/').filter(Boolean).length === bundeslandPath.split('/').filter(Boolean).length + 1) {
                     const fullUrl = importConfig.baseUrl + href;
-                    if (!seenUrls.has(fullUrl)) {
-                        const name = elNode.text().trim(); // Use elNode (Cheerio object) to call .text()
-                        if (name) {
-                            bezirke.push({ name, url: fullUrl });
-                            seenUrls.add(fullUrl);
-                        } else {
-                            addLog(jobId, `Found Bezirk URL ${fullUrl} but no name.`, 'warn');
-                        }
+                    const name = elNode.text().trim();
+                    if (name && !allBezirke.has(fullUrl)) {
+                        allBezirke.set(fullUrl, name);
+                        foundOnPage++;
                     }
                 }
             });
+            addLog(jobId, `   - Found ${foundOnPage} new Bezirke on ${url}. Total unique now: ${allBezirke.size}`);
 
-            if (bezirke.length === 0) {
-                addLog(jobId, `No Bezirke found on ${bundeslandUrl}. Check CSS selectors.`, 'warn');
-            } else {
-                addLog(jobId, `Found ${bezirke.length} Bezirke for ${bundeslandUrl}.`);
+            // Extract pagination links for subsequent pages (only needed on the first page load)
+            const paginationLinks: string[] = [];
+            if (url === bundeslandUrl) { // Only extract pagination links from the initial page
+                 $('ol.pagination_char a:not(.current)').each((index, element) => {
+                    const pageHref = $(element).attr('href');
+                    if (pageHref) {
+                        paginationLinks.push(importConfig.baseUrl + pageHref);
+                    }
+                });
+                 addLog(jobId, `   - Found ${paginationLinks.length} pagination links on initial page.`);
             }
-            return bezirke; // Success
+            return paginationLinks; // Return pagination links found on this page
 
         } catch (error: any) {
-            retries++;
             const message = error instanceof Error ? error.message : String(error);
-            console.error(`[${jobId}] --- getBezirkUrls Attempt ${retries}/${maxRetries} FAILED for ${bundeslandUrl} ---`, error);
-            addLog(jobId, `Attempt ${retries}/${maxRetries} failed for ${bundeslandUrl}: ${message}`, 'warn');
+            console.error(`[${jobId}] --- fetchAndParsePage Attempt ${attempt}/${maxRetries} FAILED for ${url} ---`, error);
+            addLog(jobId, `   - Attempt ${attempt}/${maxRetries} failed for ${url}: ${message}`, 'warn');
 
             const isRetryable = axios.isAxiosError(error) && (!error.response || error.response.status >= 500 || error.code === 'ECONNABORTED');
 
-            if (retries >= maxRetries || !isRetryable) {
-            console.error(`[${jobId}] Max retries reached or non-retryable error for ${bundeslandUrl}. Giving up.`);
-            addLog(jobId, `Error fetching Bezirk list from ${bundeslandUrl} after ${retries} attempts: ${message}`, 'error');
-            return []; // Return empty array on final failure
-        }
+            if (attempt >= maxRetries || !isRetryable) {
+                console.error(`[${jobId}] Max retries reached or non-retryable error for ${url}. Giving up on this page.`);
+                addLog(jobId, `   - Error fetching page ${url} after ${attempt} attempts: ${message}`, 'error');
+                return []; // Return empty array on final failure for this page
+            }
 
-            addLog(jobId, `Waiting ${currentDelay}ms before retry ${retries + 1} for ${bundeslandUrl}...`, 'info');
-            await sleep(currentDelay);
-            currentDelay *= 2;
+            // Wait before retrying
+            const retryDelay = initialDelay * Math.pow(2, attempt - 1); // Exponential backoff
+            addLog(jobId, `   - Waiting ${retryDelay}ms before retry ${attempt + 1} for ${url}...`, 'info');
+            await sleep(retryDelay);
+            return fetchAndParsePage(url, attempt + 1); // Retry
+        }
+    };
+
+    // 1. Fetch the initial Bundesland page and get pagination links
+    const initialPaginationLinks = await fetchAndParsePage(bundeslandUrl);
+
+    // 2. Fetch all other pagination pages
+    if (initialPaginationLinks.length > 0) {
+        addLog(jobId, `Processing ${initialPaginationLinks.length} additional pagination pages...`);
+        for (const pageUrl of initialPaginationLinks) {
+            await sleep(randomDelay(500, 1500)); // Add delay between pagination page fetches
+            await fetchAndParsePage(pageUrl); // Fetch and parse each pagination page
         }
     }
-    return []; // Should not be reached
+
+    // 3. Convert the Map to the desired array format
+    const finalBezirkeArray = Array.from(allBezirke.entries()).map(([url, name]) => ({ name, url }));
+
+    if (finalBezirkeArray.length === 0) {
+        addLog(jobId, `No Bezirke found in total for ${bundeslandUrl} after checking pagination.`, 'warn');
+    } else {
+        addLog(jobId, `Finished fetching Bezirke for ${bundeslandUrl}. Total unique found: ${finalBezirkeArray.length}.`);
+    }
+
+    return finalBezirkeArray;
 }
+
 
 /**
  * Fetches Kita URLs from a Bezirk page, handling pagination.

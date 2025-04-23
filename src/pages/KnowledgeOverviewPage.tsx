@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../../server/src/supabaseClient'; // Pfad anpassen
+import { supabase } from '@/integrations/supabase/client'; // Korrigierter Import
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import KnowledgeSidebar from '@/components/knowledge/KnowledgeSidebar'; // Importiere Sidebar
 
 // Interface für einen einzelnen Post (vereinfacht für die Übersicht)
 interface OverviewPost {
-  id: number;
+  id: string; // Geändert zu string
   title: string;
   full_path: string | null;
   excerpt_rendered: string;

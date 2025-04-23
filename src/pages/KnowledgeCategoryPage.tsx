@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { supabase } from '../../server/src/supabaseClient'; // Pfad anpassen
+import { supabase } from '@/integrations/supabase/client'; // Korrigierter Import
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import KnowledgeSidebar from '@/components/knowledge/KnowledgeSidebar'; // Importiere Sidebar
 
 interface Post {
-  id: number;
+  id: string; // Geändert zu string
   title: string;
   full_path: string | null;
   excerpt_rendered: string;
-  category_terms?: { id: number; name: string; slug: string }[];
+  // Passe den Typ an das an, was die DB wahrscheinlich zurückgibt (Array von Strings oder komplexeres JSON?)
+  // Vorerst als any[], um den Fehler zu beheben, muss ggf. genauer typisiert werden, wenn die Struktur klar ist.
+  category_terms?: any[] | null; 
   featured_media_url?: string | null; // Hinzugefügt für das Bild
 }
 
@@ -53,23 +55,14 @@ const KnowledgeCategoryPage: React.FC = () => {
 
         if (data && data.length > 0) {
           setPosts(data);
-          // Versuche, den Kategorienamen aus dem ersten Post zu extrahieren
-          const firstPostCategory = data[0].category_terms?.find(
-            (cat) => cat.slug === categorySlug
-          );
-          if (firstPostCategory) {
-            setCategoryName(firstPostCategory.name);
-          } else {
-            // Fallback, falls der Name nicht im ersten Post gefunden wird
-            // (sollte nicht passieren, wenn die Daten konsistent sind)
-            setCategoryName(categorySlug); 
-          }
+          // Vereinfachte Logik: Verwende den Slug als Namen, da die Struktur von category_terms unklar ist
+          // TODO: Wenn die Struktur von category_terms klar ist (z.B. Array von Objekten),
+          // kann die Logik zum Extrahieren des Namens wiederhergestellt werden.
+          setCategoryName(categorySlug); 
         } else {
           setPosts([]);
-          // Setze den Namen auf den Slug, wenn keine Posts gefunden wurden,
-          // damit der Benutzer weiß, welche Kategorie er aufgerufen hat.
           setCategoryName(categorySlug); 
-          setError('Keine Beiträge in dieser Kategorie gefunden.'); // Setze keinen harten Fehler, nur Info
+          // setError('Keine Beiträge in dieser Kategorie gefunden.'); // Setze keinen harten Fehler, nur Info
         }
       } catch (err: any) {
         console.error('Fehler beim Laden der Kategorie-Posts:', err);

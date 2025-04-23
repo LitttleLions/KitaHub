@@ -23,10 +23,13 @@
     - Explizite Typumwandlung (z.B. `String(...)`) im Mapper zur Sicherstellung der Zieltypen.
 - **Datenbank:**
   - Supabase (Postgres)
-  - Tabellen: `companies`, `jobs`, `users`, `courses`
-  - **Erweiterte Typisierung:** Die Tabelle `knowledge_posts` wurde in `src/integrations/supabase/types.ts` vollständig typisiert und steht nun im gesamten Projekt für den Supabase-Client zur Verfügung.
+    - **Clients:**
+      - **Frontend:** `src/integrations/supabase/client.ts` (nutzt `SUPABASE_ANON_KEY`)
+      - **Backend (Service Role):** `server/src/supabaseServiceRoleClient.ts` (nutzt `SUPABASE_SERVICE_ROLE_KEY`)
+    - **Tabellen:** `companies`, `jobs`, `users`, `courses`, `knowledge_posts`, `stories`
+    - **Erweiterte Typisierung:** Die Tabellen `knowledge_posts` und `stories` wurden in `src/integrations/supabase/types.ts` bzw. `server/src/types/kinderwelt.d.ts` typisiert.
 - **Containerisierung:**
-  - Docker, docker-compose
+  - Docker, docker-compose (derzeit deaktiviert, siehe `progress.md`)
 - **Tracking:**
   - Google Analytics 4 (DSGVO-konform)
 
@@ -40,7 +43,9 @@
 - **Healthchecks:** für beide Container aktiv
 - **Start (Docker):** `docker-compose up --build`
 - **API-Kommunikation (Docker):** HTTP im Docker-Netzwerk
-- **Aktuelles Setup (Lokal):** Der Import-Service wird derzeit lokal (`npm run build` & `node dist/server.js`) ohne Docker ausgeführt, um Modulauflösungsprobleme zu umgehen.
+- **Aktuelles Setup (Lokal):** Frontend und Backend werden lokal ausgeführt.
+  - **Backend Start:** `cd server && npm run dev` (nutzt `tsx watch --env-file .env src/server.ts` für Hot-Reload und Laden der `.env`-Datei).
+  - **Frontend Start:** `npm run dev` (im Hauptverzeichnis).
 - **Wichtig bei lokalem Setup:** TypeScript-Pfad-Aliase (definiert in `tsconfig.json`, z.B. `@/services`) funktionieren **nicht** direkt in der Node.js-Runtime. Daher müssen im Quellcode **relative Pfade** für lokale Modulimporte verwendet werden, damit der kompilierte JavaScript-Code ausgeführt werden kann. Tools wie `module-alias` wurden entfernt.
 
 ---
@@ -59,6 +64,11 @@
 
 - **Formulare:** react-hook-form, zod
 - **Uploads:** Supabase Storage, eigene Upload-Komponenten
+- **Markdown Rendering (Frontend):** `react-markdown`, `remark-gfm`
+- **Slug Generation (Backend):** `slugify`
+- **AI Content Generation (Backend):** `openai`
+- **AI Image Generation (Backend):** `axios` (für Leonardo.ai API)
+- **Environment Variables (Backend):** Laden via `tsx --env-file .env` im `dev`-Skript (`server/package.json`).
 - **Testing:** (noch nicht spezifiziert)
 - **Build:** Vite, Docker
 - **Deployment:** (nicht spezifiziert, empfohlen: Reverse Proxy + SSL)

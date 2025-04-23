@@ -18,6 +18,7 @@ kita.de ist eine der größten Kita-Suchplattformen Deutschlands. Ziel ist es, e
 - **Jobbörse:** Für Träger & Bewerber, Inserate, Pakete, Bezahlung
 - **E-Learning:** Kurse für Fachkräfte & Eltern, Fortschritt, Zertifikate, Bezahlung
 - **KI-Matching:** Eltern erhalten passende Kitas durch interaktives Formular & Algorithmus
+- **Kinderwelt:** Bereich mit generierten Kindergeschichten (via OpenAI) zum Vorlesen und Entdecken, zur Nutzerbindung und SEO-Optimierung.
 - **Admin-Bereich:** Verwaltung von Kitas, Jobs, Datenimport, Uploads, Status-Tracking
 
 ---

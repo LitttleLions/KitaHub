@@ -36,7 +36,7 @@ export interface KnowledgePost {
 }
 
 import fetch from 'node-fetch';
-import { supabase } from '../supabaseClient.js';
+import { supabase } from '../supabaseServiceRoleClient.js'; // Import geändert
 
 // Vorschau der ersten 5 Knowledge-Posts holen
 export interface KnowledgePreview {

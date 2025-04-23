@@ -37,18 +37,14 @@ interface StartImportResponse {
     jobId: string;
 }
 // --- End Type Definitions ---
-// type ImportStatus = { ... };
- // type LogEntry = { timestamp: string; message: string; level: 'info' | 'warn' | 'error' };
- // type KitaResult = { ... };
 
 // Helper function for delays (only used in simulation) - Can be removed later
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const API_BASE_URL = 'http://localhost:3000/api/import'; // Corrected port to 3000
 
 const AdminImport: React.FC = () => {
   // --- New State Variables ---
-  // Removed bundeslaender state, use GERMAN_STATES directly
   const [selectedBundeslandName, setSelectedBundeslandName] = useState<string | null>(null); // Store the name (label) for display/UI state
   const [selectedBundeslandUrl, setSelectedBundeslandUrl] = useState<string | null>(null); // Store the URL (value) for API calls
   const [bezirke, setBezirke] = useState<Bezirk[]>([]);
@@ -66,13 +62,10 @@ const AdminImport: React.FC = () => {
   const [importedKitas, setImportedKitas] = useState<string[]>([]); // Neue Liste für importierte Kitas
   const [isLoading, setIsLoading] = useState(false);
   const [isDryRun, setIsDryRun] = useState(false); // Keep for UI logic (show results)
-  // const intervalRef = useRef<NodeJS.Timeout | null>(null); // Removed intervalRef
   const pollingJobIdRef = useRef<string | null>(null); // Ref to hold the Job ID being polled
   const timeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref to hold setTimeout ID for cleanup
 
   // --- Data Fetching Effects ---
-  // Removed useEffect for fetching Bundesländer
-
   // Cleanup function to clear timeout on component unmount (Keep this part)
   useEffect(() => {
       return () => {
@@ -84,8 +77,6 @@ const AdminImport: React.FC = () => {
     };
   }, []); // Empty dependency array ensures this runs only once on mount and cleanup on unmount
 
-  // Removed the old useEffect hook that depended on 'selectedBundesland'
-
   useEffect(() => {
     // Fetch Bezirke when selectedBundeslandUrl changes (instead of name)
     if (selectedBundeslandUrl) {
@@ -94,6 +85,7 @@ const AdminImport: React.FC = () => {
         setIsLoading(true); // Indicate loading state for Bezirke
          setBezirke([]); // Clear previous Bezirke
          setSelectedBezirkeUrls([]); // Clear selection
+         setBezirkFilter(''); // Reset filter when fetching new Bezirke
          try {
            // Log the URL being fetched
            const apiUrl = `${API_BASE_URL}/bezirke?bundeslandUrl=${encodeURIComponent(selectedBundeslandUrl)}`;
@@ -140,6 +132,7 @@ const AdminImport: React.FC = () => {
     } else {
       setBezirke([]); // Clear Bezirke if no Bundesland is selected
       setSelectedBezirkeUrls([]); // Clear selection
+      setBezirkFilter(''); // Reset filter if no Bundesland selected
     }
   }, [selectedBundeslandUrl]); // Depend on the URL state now
   // --- End Data Fetching Effects ---
@@ -157,7 +150,7 @@ const AdminImport: React.FC = () => {
     setSelectedBundeslandUrl(selectedState ? selectedState.url : null);
     // Set the name state with the 'label' property for display
     setSelectedBundeslandName(selectedState ? selectedState.label : null);
-    setBezirkFilter(''); // Reset filter when Bundesland changes
+    // Reset filter when Bundesland changes - This is already done in useEffect when bezirke are cleared/fetched
   };
 
   const handleBezirkChange = (checked: boolean | string, url: string) => {
@@ -195,7 +188,6 @@ const AdminImport: React.FC = () => {
     // --- End Validation ---
 
     setIsLoading(true);
-    // setJobId(null); // DO NOT reset JobId here, it breaks polling if clicked again while running
     setImportStatus(null); // Reset detailed status
     setLogs([]); // Clear previous logs
     setResults([]); // Clear previous results
@@ -254,7 +246,6 @@ const AdminImport: React.FC = () => {
       console.error('Error starting import via API:', error);
       setStatus('Fehler beim Starten des Imports.');
       addLog(`ERROR starting import: ${error instanceof Error ? error.message : String(error)}`, 'error');
-      // setLogs(prev => [...prev, `ERROR: ${error instanceof Error ? error.message : String(error)}`]); // Already handled by addLog
       setIsLoading(false);
     }
   };
@@ -307,33 +298,19 @@ const AdminImport: React.FC = () => {
       // Set logs, keeping the latest ones first
       setLogs(backendLogs.reverse()); // Reverse to show latest at the bottom in textarea
 
-      // --- DEBUGGING: Log received logs ---
-      console.log('[DEBUG] Raw logs received in pollStatus:', statusData.logs);
-      // --- END DEBUGGING ---
-
       // --- Extract Processed Kita Names from Backend Logs ---
       const processedKitaNames = (statusData.logs || [])
         .map((log: LogEntry) => {
           // Look for the "Extracted" message pattern
           const match = log.message.match(/-> Extracted:\s*(.*?)\s*\(/);
-          // --- DEBUGGING: Log each match attempt ---
-          // console.log(`[DEBUG] Log: "${log.message}" | Match result:`, match);
-          // --- END DEBUGGING ---
           return match ? match[1].trim() : null; // Extract name if match found
         })
         .filter((name): name is string => name !== null); // Filter out nulls and ensure type is string
-
-      // --- DEBUGGING: Log extracted names before Set ---
-      console.log('[DEBUG] Extracted processedKitaNames:', processedKitaNames);
-      // --- END DEBUGGING ---
 
       // Use a Set to store unique names and maintain insertion order roughly
       // Update the state with unique names found so far
       setImportedKitas(prev => {
         const updatedSet = new Set([...prev, ...processedKitaNames]);
-        // --- DEBUGGING: Log the Set before converting to Array ---
-        // console.log('[DEBUG] Updated Set before state update:', updatedSet);
-        // --- END DEBUGGING ---
         return Array.from(updatedSet);
       });
       // --- End Extraction ---
@@ -392,14 +369,6 @@ const AdminImport: React.FC = () => {
         const resultsData: KitaResult[] = await response.json(); // Use KitaResult[]
          // --- End API Call ---
 
-         // Correctly comment out the entire simulation block
-         /*
-         const resultsData = [
-            { name: 'Kita Sonnenschein (Simuliert)', ort: 'Musterstadt', source_url: '/kita/12341' },
-            { name: 'Kita Regenbogen (Simuliert)', ort: 'Beispielburg', source_url: '/kita/12342' },
-            // Add more simulated results if needed
-         ];
-         */
        setResults(resultsData || []); // Use the actual resultsData from API
        addLog(`Frontend: Testlauf-Ergebnisse geladen (${(resultsData || []).length} Einträge).`); // Adjusted log message
        console.log('Testlauf Ergebnisse:', resultsData); // Ausgabe im Browser-Log zur Prüfung
@@ -492,7 +461,7 @@ const AdminImport: React.FC = () => {
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    {isLoading ? 'Lade Bezirke...' : 'Keine Bezirke gefunden. Bitte Bundesland prüfen oder direkt Import starten.'}
+                    {isLoading ? 'Lade Bezirke...' : 'Keine Bezirke für dieses Bundesland gefunden oder Filter zu spezifisch.'}
                   </p>
                 )}
               </div>

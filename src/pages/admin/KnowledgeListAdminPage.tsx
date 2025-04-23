@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../../server/src/supabaseClient';
+import { supabase } from '@/integrations/supabase/client'; // Korrigierter Import
 
 interface KnowledgePost {
-  id: number;
+  id: string; // Geändert zu string
   title: string;
   slug: string;
   date_published: string | null;

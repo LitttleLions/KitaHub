@@ -9,7 +9,7 @@ import { mapKitaData } from '../mappers/kitaDeMapper.js';
 import { importConfig } from '../config/importConfig.js';
 import { GERMAN_STATES } from '../config/germanStates.js'; // Import GERMAN_STATES
 import { addLog, updateJobStatus } from './importStatusService.js';
-import { supabase } from '../supabaseClient.js';
+import { supabase } from '../supabaseServiceRoleClient.js'; // Import geändert
 
 /**
  * Speichert einen Batch von Kitas in der Supabase-Datenbank per upsert.
@@ -188,14 +188,33 @@ async function runImportProcess(
                       } else {
                          overallProgress = 100;
                       }
-                      // updateJobProgress(jobId, overallProgress); // Entfernt, Funktion existiert nicht mehr
-                      // Removed sleep(randomDelay()) here as requests run in parallel
+                      // Progress calculation moved after chunk processing
 
                  }); // End of chunk.map
 
                  // Wait for all promises in the current chunk to complete
                  await Promise.all(chunkPromises);
                  console.log(`[${jobId}] Finished processing Kita chunk ${i / concurrencyLimit + 1}`);
+
+                 // --- Calculate and Update Progress ---
+                 const processedKitasInCurrentBezirk = i + chunk.length;
+                 let progressFractionCurrentBezirk = 0;
+                 if (kitaUrls.length > 0) {
+                     progressFractionCurrentBezirk = processedKitasInCurrentBezirk / kitaUrls.length;
+                 }
+                 // Ensure progress doesn't exceed 1 for the current Bezirk if counts are off
+                 progressFractionCurrentBezirk = Math.min(progressFractionCurrentBezirk, 1);
+
+                 // Calculate overall progress based on completed Bezirke + fraction of the current one
+                 overallProgress = Math.round(((bzIndex + progressFractionCurrentBezirk) / totalBezirkeToProcess) * 100);
+                 // Ensure progress doesn't exceed 100
+                 overallProgress = Math.min(overallProgress, 100);
+
+                 console.log(`[${jobId}] Progress Update: Bezirk ${bzIndex + 1}/${totalBezirkeToProcess}, Kitas in Bezirk ${processedKitasInCurrentBezirk}/${kitaUrls.length}, Overall: ${overallProgress}%`);
+                 // Pass overallProgress as the third argument (messageOrProgress)
+                 updateJobStatus(jobId, 'running', overallProgress);
+                 // --- End Progress Update ---
+
 
                  // Now save the batch collected from this chunk (if not dry run)
                  if (!dryRun && batchToSave.length > 0) {
@@ -230,8 +249,10 @@ async function runImportProcess(
          // updateJobProgress(jobId, 100); // Entfernt, Funktion existiert nicht mehr
          // Adjust final count logic if needed, especially for dry run
          const finalResultCount = dryRun ? totalKitasProcessed : totalKitasSaved;
-         addLog(jobId, `Import process finished. Processed: ${totalKitasProcessed}. ${dryRun ? 'Collected (Dry Run)' : 'Saved/Upserted'}: ${finalResultCount}`);
-         updateJobStatus(jobId, 'completed');
+         const completionMessage = `Import process finished. Processed: ${totalKitasProcessed}. ${dryRun ? 'Collected (Dry Run)' : 'Saved/Upserted'}: ${finalResultCount}`;
+         addLog(jobId, completionMessage);
+         // Explicitly set progress to 100 on completion
+         updateJobStatus(jobId, 'completed', completionMessage, 100);
          console.log(`[${jobId}] --- runImportProcess COMPLETED NORMALLY ---`);
      }
      catch (error: unknown) {

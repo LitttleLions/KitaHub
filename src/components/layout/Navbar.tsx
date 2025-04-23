@@ -3,7 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Logo from './Logo';
-import { User, ChevronDown, Search, MapPin, BookOpen, Briefcase, Heart, GraduationCap } from 'lucide-react';
+// Import Feather icon
+import { User, ChevronDown, Search, MapPin, BookOpen, Briefcase, Heart, GraduationCap, Feather } from 'lucide-react';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -66,7 +67,26 @@ const navigationItems = [
   },
   // { name: "Matching", href: "/matching", icon: Heart }, // Moved under Kita-Suche
   { name: "E-Learning", href: "/elearning", icon: GraduationCap },
-  { name: "Wissen", href: "/wissen", icon: BookOpen }, // NEU: Wissen hinzugefügt
+  // Updated "Wissen" to be a dropdown
+  { 
+    name: "Wissen", 
+    href: "/wissen", // Main link still points to overview
+    dropdown: [
+      { 
+        name: "Wissens-Übersicht", 
+        href: "/wissen", 
+        description: "Artikel und Ratgeber für Eltern & Fachkräfte",
+        icon: BookOpen 
+      },
+      { 
+        name: "Kindergeschichten", // New link to Kinderwelt
+        href: "/kinderwelt", 
+        description: "Spannende Geschichten zum Vorlesen und Entdecken",
+        icon: Feather // Use Feather icon
+      }
+      // Hier könnten später dynamisch Kategorien hinzugefügt werden
+    ]
+  }, 
   { 
     name: "Guides", 
     href: "#", // Keep href="#" if it's just a trigger

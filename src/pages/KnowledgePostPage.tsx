@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { supabase } from '../../server/src/supabaseClient'; // Pfad anpassen, falls nötig
+import { supabase } from '@/integrations/supabase/client'; // Korrigierter Import
 import Navbar from '@/components/layout/Navbar'; // Importiere Navbar
 import Footer from '@/components/layout/Footer'; // Importiere Footer
 import KnowledgeSidebar from '@/components/knowledge/KnowledgeSidebar'; // Importiere Sidebar

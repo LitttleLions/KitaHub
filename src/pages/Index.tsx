@@ -1,22 +1,29 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import Navbar from '@/components/layout/Navbar'; // Wiederhergestellt
+import Footer from '@/components/layout/Footer'; // Wiederhergestellt
 import FeaturedKitaCard from '../components/kitas/FeaturedKitaCard';
 import JobCard from '../components/jobs/JobCard';
+import Features from '@/components/home/Features'; // Import Features component
+import Stats from '@/components/home/Stats'; // Import Stats component
 // KitaSearchForm wird jetzt in KitaSearchHero importiert
 import KitaSearchHero from '@/components/kitas/KitaSearchHero'; // Import KitaSearchHero
 import { fetchFeaturedKitas, fetchRandomKitas } from '../services/kitaService';
 import { fetchFeaturedJobs } from '../services/jobService';
 import { supabase } from '@/integrations/supabase/client'; // Korrekter Importpfad
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { Company } from '@/types/company'; // Import Company type
+import { Job } from '@/types/job'; // Import Job type
 
 const Index = () => {
-  const [randomKitas, setRandomKitas] = useState([]);
-  const { data: featuredKitas = [] } = useQuery({ queryKey: ['featuredKitas'], queryFn: () => fetchFeaturedKitas() });
-  const { data: featuredJobs = [] } = useQuery({ queryKey: ['featuredJobs'], queryFn: () => fetchFeaturedJobs() });
-  const [randomKnowledge, setRandomKnowledge] = useState([]);
+  // Use any[] for randomKitas state to avoid complex type issues for now
+  const [randomKitas, setRandomKitas] = useState<any[]>([]);
+  // Remove explicit type from useQuery, let it infer. Default to empty array.
+  const { data: featuredKitas = [] } = useQuery({ queryKey: ['featuredKitas'], queryFn: fetchFeaturedKitas });
+  // Wrap fetchFeaturedJobs in an anonymous function to fix type error
+  const { data: featuredJobs = [] } = useQuery<Job[]>({ queryKey: ['featuredJobs'], queryFn: () => fetchFeaturedJobs() });
+  const [randomKnowledge, setRandomKnowledge] = useState<any[]>([]); // Use any[] for now
   const navigate = useNavigate(); // Hook für Navigation
 
   // State für die Suchfelder
@@ -27,7 +34,7 @@ const Index = () => {
   useEffect(() => {
     async function loadRandomKitas() {
       const kitas = await fetchRandomKitas(4);
-      setRandomKitas(kitas);
+      setRandomKitas(kitas); // Set directly, state is now any[]
     }
     loadRandomKitas();
 
@@ -57,39 +64,43 @@ const Index = () => {
 
   return (
     <>
-      <Navbar />
-      <main className="container mx-auto px-4 md:px-6 py-8">
-        {/* Hero Section */}
-        <section className="mb-12 py-12 bg-gradient-to-r from-blue-50 via-white to-green-50 text-center">
-           <KitaSearchHero
-                searchText={searchText}
-                setSearchText={setSearchText}
-                location={location}
-                setLocation={setLocation}
-                selectedState={selectedState}
-                setSelectedState={setSelectedState}
-                handleSearch={(e) => {
-                  e.preventDefault();
-                  const params = new URLSearchParams();
-                  if (searchText) params.set('q', searchText);
-                  if (location) params.set('location', location);
-                  if (selectedState !== 'all') params.set('bundesland', selectedState);
-                  navigate(`/kitas?${params.toString()}`);
-                }}
-                title="Die perfekte Kita für Ihr Kind finden"
-                subtitle="Durchsuchen Sie über 50.000 Kindertagesstätten in ganz Deutschland und finden Sie die passende Einrichtung in Ihrer Nähe."
-                showFrequentSearches={true}
-                showBottomLinks={true}
-                bgColor="bg-gradient-to-r from-blue-50 via-white to-green-50" // Match background from previous attempt
-             />
-        </section>
+      <Navbar /> {/* Wiederhergestellt */}
+      {/* Hero Section - Removed container and padding from main for full width */}
+      <section className="mb-12 bg-gradient-to-r from-blue-50 via-white to-green-50 text-center"> {/* Removed py-12 */}
+         <KitaSearchHero
+              searchText={searchText}
+              setSearchText={setSearchText}
+              location={location}
+              setLocation={setLocation}
+              selectedState={selectedState}
+              setSelectedState={setSelectedState}
+              handleSearch={(e) => {
+                e.preventDefault();
+                const params = new URLSearchParams();
+                if (searchText) params.set('q', searchText);
+                if (location) params.set('location', location);
+                if (selectedState !== 'all') params.set('bundesland', selectedState);
+                navigate(`/kitas?${params.toString()}`);
+              }}
+              title="Die perfekte Kita für Ihr Kind finden"
+              subtitle="Durchsuchen Sie über 50.000 Kindertagesstätten in ganz Deutschland und finden Sie die passende Einrichtung in Ihrer Nähe."
+              showFrequentSearches={true}
+              showBottomLinks={true}
+               bgColor="bg-transparent" // Make hero background transparent, rely on section background
+            />
+       </section>
 
-        {/* Recommended Kitas */}
-        <section className="mb-8">
+      <main className="container mx-auto px-4 md:px-6 py-8"> {/* Re-add container for the rest */}
+         {/* Features Section */}
+         <Features />
+
+         {/* Recommended Kitas */}
+         <section className="mb-8">
           <h2 className="text-xl font-semibold mb-4">Empfohlene Kindertagesstätten</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredKitas.map((kita) => (
-              <FeaturedKitaCard key={kita.id} kita={kita} />
+            {/* Use type assertion 'as Company' */}
+            {featuredKitas.map((kita, idx) => (
+              <FeaturedKitaCard key={kita.id} kita={kita as Company} index={idx} />
             ))}
           </div>
         </section>
@@ -99,8 +110,9 @@ const Index = () => {
           <h3 className="text-lg font-semibold mb-4">Weitere Kitas entdecken</h3>
           {/* Adjusted grid for smaller appearance */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {randomKitas.map((kita) => (
-              <FeaturedKitaCard key={kita.id} kita={kita} isMini />
+             {/* Use type assertion 'as Company' */}
+            {randomKitas.map((kita, idx) => (
+              <FeaturedKitaCard key={kita.id} kita={kita as Company} index={idx} />
             ))}
           </div>
           <div className="mt-4 text-center">
@@ -114,6 +126,7 @@ const Index = () => {
         <section className="mb-8">
           <h2 className="text-xl font-semibold mb-4">Empfohlene Stellenangebote</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Now featuredJobs should be correctly typed as Job[] */}
             {featuredJobs.map((job) => (
               <JobCard key={job.id} job={job} />
             ))}
@@ -131,7 +144,7 @@ const Index = () => {
           {/* Debug-Ausgabe entfernt */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {randomKnowledge.length > 0 ? (
-              randomKnowledge.map((knowledge) => {
+              randomKnowledge.map((knowledge: any) => { // Use any for now if type is complex/unknown
                 console.log('Rendering knowledge item:', knowledge); // Debug-Ausgabe 3 bleibt vorerst
                 const imageUrl = knowledge.featured_media_url; // Nur featured_media_url verwenden
                 // Ensure linkPath starts with /wissen/ and ends with /
@@ -179,12 +192,14 @@ const Index = () => {
             <Link to="/wissen" className="text-kita-orange font-semibold hover:underline">
               Mehr Wissen entdecken &rarr;
             </Link>
-          </div>
-        </section>
-      </main>
-      <Footer />
-    </>
-  );
+           </div>
+         </section>
+       </main>
+       {/* Stats Section before Footer */}
+       <Stats />
+       <Footer /> {/* Wiederhergestellt */}
+     </>
+   );
 };
 
 export default Index;

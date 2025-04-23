@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+// dotenv.config() wird jetzt über das Start-Skript (-r dotenv/config) geladen
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -9,6 +10,9 @@ import { runImportProcess } from './services/importService.js';
 import { updateJobStatus, addLog, getJobStatus } from './services/importStatusService.js';
 import { getBundeslandUrlsAndNames, getBezirkUrlsAndNames } from './scrapers/kitaDeScraper.js';
 import { fetchKnowledgePreview, importKnowledgePosts } from './services/knowledgeImportService.js';
+
+// Import Kinderwelt routes
+import kinderweltRouter from './routes/kinderweltRoutes.js'; // .js Endung!
 
 const app = express();
 const port = process.env.BACKEND_PORT || 3000; 
@@ -188,6 +192,10 @@ app.get('/api/import/bezirke', async (req: Request, res: Response, next: NextFun
         console.log(`[${tempJobId}] === /api/import/bezirke API call completed ===`);
     }
 });
+
+// --- Register Kinderwelt API Routes ---
+app.use('/api/kinderwelt', kinderweltRouter);
+
 
 // Central Error Handling Middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
